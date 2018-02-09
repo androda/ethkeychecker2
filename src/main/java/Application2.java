@@ -5,13 +5,12 @@ import org.ethereum.crypto.ECKey;
 import org.spongycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 public class Application2 {
-
-//    }
 
     private static enum Color {
         PINK,
@@ -80,14 +79,60 @@ public class Application2 {
 
     static int[] hexOrder = new int[]{0, 5, 4, 5, 14, 9, 12, 13, 7, 8, 3, 6, 10, 10, 4, 10, 5, 0, 6, 11, 12, 3, 13, 13, 3, 8, 14, 7, 10, 15, 6, 1, 13, 14, 11, 9, 11, 3, 5, 4, 3, 0, 4, 2, 5, 8, 1, 15, 15, 9, 8, 1, 13, 1, 15, 15, 6, 7, 10, 5, 8, 11, 2, 8};
 
-    private static String getRingString(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+    private static String getCTCTRingString(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
         StringBuilder binaryString = new StringBuilder();
-        binaryString.append(colorMap.get(segmentProperties[hexOrder[ring * 4]].color)).append(thicknessMap.get(segmentProperties[hexOrder[ring * 4]].thickness));
-        binaryString.append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 1]].color)).append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 1]].thickness));
-        binaryString.append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 2]].color)).append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 2]].thickness));
-        binaryString.append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 3]].color)).append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 3]].thickness));
+        binaryString
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4]].thickness))
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 1]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 1]].thickness))
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 2]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 2]].thickness))
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 3]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 3]].thickness));return binaryString.toString();
+    }
+
+    private static String getTCTCRingString(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+        StringBuilder binaryString = new StringBuilder();
+        binaryString
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4]].thickness))
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 1]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 1]].thickness))
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 2]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 2]].thickness))
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 3]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 3]].thickness));return binaryString.toString();
+    }
+
+    private static String getCCTTRingString(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+        StringBuilder binaryString = new StringBuilder();
+        binaryString
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4]].thickness))
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 1]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 1]].thickness))
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 2]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 2]].thickness))
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 3]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 3]].thickness));return binaryString.toString();
+    }
+
+    private static String getTTCCRingString(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+        StringBuilder binaryString = new StringBuilder();
+        binaryString
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4]].thickness))
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 1]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 1]].thickness))
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 2]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 2]].thickness))
+                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 3]].color))
+                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 3]].thickness));
         return binaryString.toString();
     }
+
+
 
 
     private static List<String> buildPossiblePrivateKeys(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
@@ -99,18 +144,25 @@ public class Application2 {
         StringBuilder leftShiftPrependBuilder = new StringBuilder();
         StringBuilder rightShiftPrependBuilder = new StringBuilder();
 
-        for (int ring = 0; ring < 16; ring++) {
-            String ringChar = getRingString(ring, colorMap, thicknessMap);
 
+        for (int ring = 0; ring < 16; ring++) {
+
+            ArrayList<Object> objects = Lists.newArrayList();
+
+
+//            String ringChar = getCTCTRingString(ring, colorMap, thicknessMap);
+//            String ringChar = getTCTCRingString(ring, colorMap, thicknessMap);
+//            String ringChar = getCCTTRingString(ring, colorMap, thicknessMap);
+            String ringChar = getTTCCRingString(ring, colorMap, thicknessMap);
 
             String rightShift = rightRotate(ringChar, ring);
             String leftShift = leftRotate(ringChar, ring);
-            normal.append(Integer.toString(Integer.parseInt(ringChar, 2), 16));
-            rightShiftBuilder.append(Integer.toString(Integer.parseInt(rightShift, 2), 16));
-            leftShiftBuilder.append(Integer.toString(Integer.parseInt(leftShift, 2), 16));
-            normalPrepend.insert(0,Integer.toString(Integer.parseInt(ringChar, 2), 16));
-            rightShiftPrependBuilder.insert(0,Integer.toString(Integer.parseInt(rightShift, 2), 16));
-            leftShiftPrependBuilder.insert(0,Integer.toString(Integer.parseInt(leftShift, 2), 16));
+            normal.append(convertBinaryStringToHex(ringChar));
+            normalPrepend.insert(0, convertBinaryStringToHex(ringChar));
+            rightShiftBuilder.append(convertBinaryStringToHex(rightShift));
+            rightShiftPrependBuilder.insert(0, convertBinaryStringToHex(rightShift));
+            leftShiftBuilder.append(convertBinaryStringToHex(leftShift));
+            leftShiftPrependBuilder.insert(0, convertBinaryStringToHex(leftShift));
 
         }
 
@@ -128,6 +180,13 @@ public class Application2 {
         retVal.add(leftShiftPrependBuilder.reverse().toString());
         return retVal;
 
+    }
+
+    public static String convertBinaryStringToHex(String s) {
+        String s1 = Integer.toString(Integer.parseInt(s, 2), 16);
+        while (s1.length() < 4)
+            s1 = "0" + s1;
+        return s1;
     }
 
 
@@ -199,22 +258,21 @@ public class Application2 {
     public static void main(String[] args) {
 
         brute();
-
+//        simpleRun();
     }
 
     private static void simpleRun() {
         Map<Color, String> colorMap = Maps.newHashMap();
         Map<Thickness, String> thicknessMap = Maps.newHashMap();
 
-        colorMap.put(Color.PINK, "11");
-        colorMap.put(Color.DG, "10");
-        colorMap.put(Color.BLUE, "01");
-        colorMap.put(Color.LG, "00");
+        colorMap.put(Color.PINK, "10");
+        colorMap.put(Color.DG, "00");
+        colorMap.put(Color.BLUE, "11");
+        colorMap.put(Color.LG, "01");
         thicknessMap.put(Thickness.S, "00");
         thicknessMap.put(Thickness.M, "01");
         thicknessMap.put(Thickness.L, "10");
         thicknessMap.put(Thickness.XL, "11");
-        System.out.println(Long.parseLong("000101101010001010100101010", 2));
         for (String s : buildPossiblePrivateKeys(colorMap, thicknessMap)) {
             System.out.println(s);
             validate(s);
