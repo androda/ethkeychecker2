@@ -11,8 +11,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static com.lostphoenix.SegmentType.PINK_XL;
-
 public class Application2 {
 
 
@@ -56,82 +54,75 @@ public class Application2 {
             /*16*/ SegmentType.DARK_GREEN_L, SegmentType.BLUE_L, SegmentType.PINK_S, SegmentType.DARK_GREEN_L};
 
     private static class CTCTRingStringGenerator implements RingStringGenerator {
-        public String generate(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+        public String generate(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap, List<Coordinate> segments) {
             StringBuilder binaryString = new StringBuilder();
-            binaryString
-                    .append(colorMap.get(segmentOrder[ring * 4].color))
-                    .append(thicknessMap.get(segmentOrder[ring * 4].thickness))
-                    .append(colorMap.get(segmentOrder[ring * 4 + 1].color))
-                    .append(thicknessMap.get(segmentOrder[ring * 4 + 1].thickness))
-                    .append(colorMap.get(segmentOrder[ring * 4 + 2].color))
-                    .append(thicknessMap.get(segmentOrder[ring * 4 + 2].thickness))
-                    .append(colorMap.get(segmentOrder[ring * 4 + 3].color))
-                    .append(thicknessMap.get(segmentOrder[ring * 4 + 3].thickness));
+            for (Coordinate segment : segments) {
+                binaryString.append(colorMap.get(segmentOrder[segment.ring * 4 + segment.segmentInRing].color));
+                binaryString.append(thicknessMap.get(segmentOrder[segment.ring * 4 + segment.segmentInRing].thickness));
+            }
             return binaryString.toString();
         }
     }
 
     private static class TCTCRingStringGenerator implements RingStringGenerator {
-        public String generate(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+        public String generate(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap, List<Coordinate> segments) {
             StringBuilder binaryString = new StringBuilder();
-            binaryString
-                    .append(thicknessMap.get(segmentOrder[ring * 4].thickness))
-                    .append(colorMap.get(segmentOrder[ring * 4].color))
-                    .append(thicknessMap.get(segmentOrder[ring * 4 + 1].thickness))
-                    .append(colorMap.get(segmentOrder[ring * 4 + 1].color))
-                    .append(thicknessMap.get(segmentOrder[ring * 4 + 2].thickness))
-                    .append(colorMap.get(segmentOrder[ring * 4 + 2].color))
-                    .append(thicknessMap.get(segmentOrder[ring * 4 + 3].thickness))
-                    .append(colorMap.get(segmentOrder[ring * 4 + 3].color));
+            for (Coordinate segment : segments) {
+                binaryString.append(thicknessMap.get(segmentOrder[segment.ring * 4 + segment.segmentInRing].thickness));
+                binaryString.append(colorMap.get(segmentOrder[segment.ring * 4 + segment.segmentInRing].color));
+            }
             return binaryString.toString();
         }
     }
 
     private static class CCTTRingStringGenerator implements RingStringGenerator {
-        public String generate(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+        public String generate(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap, List<Coordinate> segments) {
             StringBuilder binaryString = new StringBuilder();
-            binaryString
-                    .append(colorMap.get(segmentOrder[ring * 4].color))
-                    .append(colorMap.get(segmentOrder[ring * 4 + 1].color))
-                    .append(colorMap.get(segmentOrder[ring * 4 + 2].color))
-                    .append(colorMap.get(segmentOrder[ring * 4 + 3].color))
-                    .append(thicknessMap.get(segmentOrder[ring * 4].thickness))
-                    .append(thicknessMap.get(segmentOrder[ring * 4 + 1].thickness))
-                    .append(thicknessMap.get(segmentOrder[ring * 4 + 2].thickness))
-                    .append(thicknessMap.get(segmentOrder[ring * 4 + 3].thickness));
+            for (Coordinate segment : segments) {
+                binaryString.append(colorMap.get(segmentOrder[segment.ring * 4 + segment.segmentInRing].color));
+            }
+            for (Coordinate segment : segments) {
+                binaryString.append(thicknessMap.get(segmentOrder[segment.ring * 4 + segment.segmentInRing].thickness));
+            }
             return binaryString.toString();
         }
     }
 
 
     private static class TTCCRingStringGenerator implements RingStringGenerator {
-        public String generate(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+        public String generate(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap, List<Coordinate> segments) {
             StringBuilder binaryString = new StringBuilder();
-            binaryString
-                    .append(thicknessMap.get(segmentOrder[ring * 4].thickness))
-                    .append(thicknessMap.get(segmentOrder[ring * 4 + 1].thickness))
-                    .append(thicknessMap.get(segmentOrder[ring * 4 + 2].thickness))
-                    .append(thicknessMap.get(segmentOrder[ring * 4 + 3].thickness))
-                    .append(colorMap.get(segmentOrder[ring * 4].color))
-                    .append(colorMap.get(segmentOrder[ring * 4 + 1].color))
-                    .append(colorMap.get(segmentOrder[ring * 4 + 2].color))
-                    .append(colorMap.get(segmentOrder[ring * 4 + 3].color));
+            for (Coordinate segment : segments) {
+                binaryString.append(thicknessMap.get(segmentOrder[segment.ring * 4 + segment.segmentInRing].thickness));
+            }
+            for (Coordinate segment : segments) {
+                binaryString.append(colorMap.get(segmentOrder[segment.ring * 4 + segment.segmentInRing].color));
+            }
             return binaryString.toString();
         }
     }
 
+    //TODO: What if color/thickness bits are intertwined like c1t1c2t2 so color 01 and thickness 01 turns into the string 0011?
+
 
     private static interface RingStringGenerator {
-        String generate(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap);
+        String generate(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap, List<Coordinate> segments);
+    }
+
+    private static class Coordinate {
+        public final int ring;
+        public final int segmentInRing;
+
+        public Coordinate(int ring, int segment) {
+            this.ring = ring;
+            this.segmentInRing = segment;
+        }
     }
 
     private static List<RingStringGenerator> generators = Lists.newArrayList(new CCTTRingStringGenerator(), new CTCTRingStringGenerator(), new TCTCRingStringGenerator(), new TTCCRingStringGenerator());
 
-
-    private static List<String> buildPossiblePrivateKeys(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+    public static List<String> inToOutTraversal(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
         List<String> retVal = Lists.newArrayList();
-        List<StringBuilder> builders = Lists.newArrayList();
-
 
         for (int genIndex = 0; genIndex < generators.size(); genIndex++) {
             RingStringGenerator generator = generators.get(genIndex);
@@ -142,9 +133,16 @@ public class Application2 {
             StringBuilder leftShiftPrependBuilder = new StringBuilder();
             StringBuilder rightShiftPrependBuilder = new StringBuilder();
             for (int ring = 0; ring < 16; ring++) {
+                List<Coordinate> coordinates = Lists.newArrayList(
+                        new Coordinate(ring, 0),
+                        new Coordinate(ring, 1),
+                        new Coordinate(ring, 2),
+                        new Coordinate(ring, 3)
+
+                );
 
 
-                String ringChar = generator.generate(ring, colorMap, thicknessMap);
+                String ringChar = generator.generate(colorMap, thicknessMap, coordinates);
 
                 String rightShift = rightRotate(ringChar, ring);
                 String leftShift = leftRotate(ringChar, ring);
@@ -170,14 +168,55 @@ public class Application2 {
         }
 
         return retVal;
+    }
+
+    public static List<String> spiralIntoOut(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+        List<String> retVal = Lists.newArrayList();
+
+        for (int genIndex = 0; genIndex < generators.size(); genIndex++) {
+            RingStringGenerator generator = generators.get(genIndex);
+            StringBuilder normal = new StringBuilder();
+            StringBuilder normalPrepend = new StringBuilder();
+            List<Coordinate> coordinates = Lists.newArrayList();
+            for (int segIndex = 0; segIndex < 4; segIndex++) {
+                for (int ring = 0; ring < 16; ring++) {
+                    coordinates.add(new Coordinate(ring, segIndex));
+                }
+            }
+
+            String ringChar = generator.generate(colorMap, thicknessMap, coordinates);
+
+            normal.append(convertBinaryStringToHex(ringChar));
+            normalPrepend.insert(0, convertBinaryStringToHex(ringChar));
+            retVal.add(normal.toString());
+            retVal.add(normal.reverse().toString());
+            retVal.add(normalPrepend.toString());
+            retVal.add(normalPrepend.reverse().toString());
+        }
+
+        return retVal;
+    }
+
+
+    private static List<String> buildPossiblePrivateKeys(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+        List<String> retVal = Lists.newArrayList();
+        retVal.addAll(inToOutTraversal(colorMap, thicknessMap));
+        retVal.addAll(spiralIntoOut(colorMap,thicknessMap));
+        return retVal;
 
     }
 
     public static String convertBinaryStringToHex(String s) {
-        String s1 = Integer.toString(Integer.parseInt(s, 2), 16);
-        while (s1.length() < 4)
-            s1 = "0" + s1;
-        return s1;
+        StringBuilder retVal = new StringBuilder();
+        for(int i=0;i<s.length();i+=16) {
+            String section = s.substring(i,i+16);
+            String secitionConverted = Long.toString(Long.parseLong(section, 2), 16);
+            while (secitionConverted.length() < 4) {
+                secitionConverted = "0" + secitionConverted;
+            }
+            retVal.append(secitionConverted);
+        }
+        return retVal.toString();
     }
 
 
