@@ -79,105 +79,120 @@ public class Application2 {
 
     static int[] hexOrder = new int[]{0, 5, 4, 5, 14, 9, 12, 13, 7, 8, 3, 6, 10, 10, 4, 10, 5, 0, 6, 11, 12, 3, 13, 13, 3, 8, 14, 7, 10, 15, 6, 1, 13, 14, 11, 9, 11, 3, 5, 4, 3, 0, 4, 2, 5, 8, 1, 15, 15, 9, 8, 1, 13, 1, 15, 15, 6, 7, 10, 5, 8, 11, 2, 8};
 
-    private static String getCTCTRingString(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
-        StringBuilder binaryString = new StringBuilder();
-        binaryString
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4]].thickness))
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 1]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 1]].thickness))
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 2]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 2]].thickness))
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 3]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 3]].thickness));return binaryString.toString();
+    private static class CTCTRingStringGenerator implements RingStringGenerator {
+        public String generate(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+            StringBuilder binaryString = new StringBuilder();
+            binaryString
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4]].color))
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4]].thickness))
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 1]].color))
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 1]].thickness))
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 2]].color))
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 2]].thickness))
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 3]].color))
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 3]].thickness));
+            return binaryString.toString();
+        }
     }
 
-    private static String getTCTCRingString(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
-        StringBuilder binaryString = new StringBuilder();
-        binaryString
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4]].thickness))
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 1]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 1]].thickness))
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 2]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 2]].thickness))
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 3]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 3]].thickness));return binaryString.toString();
+    private static class TCTCRingStringGenerator implements RingStringGenerator {
+        public String generate(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+            StringBuilder binaryString = new StringBuilder();
+            binaryString
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4]].thickness))
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4]].color))
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 1]].thickness))
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 1]].color))
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 2]].thickness))
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 2]].color))
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 3]].thickness))
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 3]].color));
+            return binaryString.toString();
+        }
     }
 
-    private static String getCCTTRingString(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
-        StringBuilder binaryString = new StringBuilder();
-        binaryString
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4]].thickness))
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 1]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 1]].thickness))
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 2]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 2]].thickness))
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 3]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 3]].thickness));return binaryString.toString();
-    }
-
-    private static String getTTCCRingString(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
-        StringBuilder binaryString = new StringBuilder();
-        binaryString
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4]].thickness))
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 1]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 1]].thickness))
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 2]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 2]].thickness))
-                .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 3]].color))
-                .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 3]].thickness));
-        return binaryString.toString();
+    private static class CCTTRingStringGenerator implements RingStringGenerator {
+        public String generate(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+            StringBuilder binaryString = new StringBuilder();
+            binaryString
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4]].color))
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 1]].color))
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 2]].color))
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 3]].color))
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4]].thickness))
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 1]].thickness))
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 2]].thickness))
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 3]].thickness));
+            return binaryString.toString();
+        }
     }
 
 
+    private static class TTCCRingStringGenerator implements RingStringGenerator {
+        public String generate(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+            StringBuilder binaryString = new StringBuilder();
+            binaryString
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4]].thickness))
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 1]].thickness))
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 2]].thickness))
+                    .append(thicknessMap.get(segmentProperties[hexOrder[ring * 4 + 3]].thickness))
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4]].color))
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 1]].color))
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 2]].color))
+                    .append(colorMap.get(segmentProperties[hexOrder[ring * 4 + 3]].color));
+            return binaryString.toString();
+        }
+    }
+
+
+    private static interface RingStringGenerator {
+        String generate(int ring, Map<Color, String> colorMap, Map<Thickness, String> thicknessMap);
+    }
+
+    private static List<RingStringGenerator> generators = Lists.newArrayList(new CCTTRingStringGenerator(), new CTCTRingStringGenerator(), new TCTCRingStringGenerator(), new TTCCRingStringGenerator());
 
 
     private static List<String> buildPossiblePrivateKeys(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
         List<String> retVal = Lists.newArrayList();
-        StringBuilder normal = new StringBuilder();
-        StringBuilder leftShiftBuilder = new StringBuilder();
-        StringBuilder rightShiftBuilder = new StringBuilder();
-        StringBuilder normalPrepend = new StringBuilder();
-        StringBuilder leftShiftPrependBuilder = new StringBuilder();
-        StringBuilder rightShiftPrependBuilder = new StringBuilder();
+        List<StringBuilder> builders = Lists.newArrayList();
 
 
-        for (int ring = 0; ring < 16; ring++) {
+        for (int genIndex = 0; genIndex < generators.size(); genIndex++) {
+            RingStringGenerator generator = generators.get(genIndex);
+            StringBuilder normal = new StringBuilder();
+            StringBuilder leftShiftBuilder = new StringBuilder();
+            StringBuilder rightShiftBuilder = new StringBuilder();
+            StringBuilder normalPrepend = new StringBuilder();
+            StringBuilder leftShiftPrependBuilder = new StringBuilder();
+            StringBuilder rightShiftPrependBuilder = new StringBuilder();
+            for (int ring = 0; ring < 16; ring++) {
 
-            ArrayList<Object> objects = Lists.newArrayList();
 
+                String ringChar = generator.generate(ring, colorMap, thicknessMap);
 
-//            String ringChar = getCTCTRingString(ring, colorMap, thicknessMap);
-//            String ringChar = getTCTCRingString(ring, colorMap, thicknessMap);
-//            String ringChar = getCCTTRingString(ring, colorMap, thicknessMap);
-            String ringChar = getTTCCRingString(ring, colorMap, thicknessMap);
-
-            String rightShift = rightRotate(ringChar, ring);
-            String leftShift = leftRotate(ringChar, ring);
-            normal.append(convertBinaryStringToHex(ringChar));
-            normalPrepend.insert(0, convertBinaryStringToHex(ringChar));
-            rightShiftBuilder.append(convertBinaryStringToHex(rightShift));
-            rightShiftPrependBuilder.insert(0, convertBinaryStringToHex(rightShift));
-            leftShiftBuilder.append(convertBinaryStringToHex(leftShift));
-            leftShiftPrependBuilder.insert(0, convertBinaryStringToHex(leftShift));
-
+                String rightShift = rightRotate(ringChar, ring);
+                String leftShift = leftRotate(ringChar, ring);
+                normal.append(convertBinaryStringToHex(ringChar));
+                normalPrepend.insert(0, convertBinaryStringToHex(ringChar));
+                rightShiftBuilder.append(convertBinaryStringToHex(rightShift));
+                rightShiftPrependBuilder.insert(0, convertBinaryStringToHex(rightShift));
+                leftShiftBuilder.append(convertBinaryStringToHex(leftShift));
+                leftShiftPrependBuilder.insert(0, convertBinaryStringToHex(leftShift));
+            }
+            retVal.add(normal.toString());
+            retVal.add(leftShiftBuilder.toString());
+            retVal.add(rightShiftBuilder.toString());
+            retVal.add(normal.reverse().toString());
+            retVal.add(leftShiftBuilder.reverse().toString());
+            retVal.add(rightShiftBuilder.reverse().toString());
+            retVal.add(normalPrepend.toString());
+            retVal.add(rightShiftPrependBuilder.toString());
+            retVal.add(leftShiftPrependBuilder.toString());
+            retVal.add(normalPrepend.reverse().toString());
+            retVal.add(rightShiftPrependBuilder.reverse().toString());
+            retVal.add(leftShiftPrependBuilder.reverse().toString());
         }
 
-        retVal.add(normal.toString());
-        retVal.add(leftShiftBuilder.toString());
-        retVal.add(rightShiftBuilder.toString());
-        retVal.add(normal.reverse().toString());
-        retVal.add(leftShiftBuilder.reverse().toString());
-        retVal.add(rightShiftBuilder.reverse().toString());
-        retVal.add(normalPrepend.toString());
-        retVal.add(rightShiftPrependBuilder.toString());
-        retVal.add(leftShiftPrependBuilder.toString());
-        retVal.add(normalPrepend.reverse().toString());
-        retVal.add(rightShiftPrependBuilder.reverse().toString());
-        retVal.add(leftShiftPrependBuilder.reverse().toString());
         return retVal;
 
     }
