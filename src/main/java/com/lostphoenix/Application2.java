@@ -7,6 +7,8 @@ import org.ethereum.crypto.ECKey;
 import org.spongycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +37,7 @@ public class Application2 {
 
 
     //    static int[] hexOrder = new int[]{0, 5, 4, 5, 14, 9, 12, 13, 7, 8, 3, 6, 10, 10, 4, 10, 5, 0, 6, 11, 12, 3, 13, 13, 3, 8, 14, 7, 10, 15, 6, 1, 13, 14, 11, 9, 11, 3, 5, 4, 3, 0, 4, 2, 5, 8, 1, 15, 15, 9, 8, 1, 13, 1, 15, 15, 6, 7, 10, 5, 8, 11, 2, 8};
-    static SegmentType[] segmentOrder = new SegmentType[]{
+    public static SegmentType[] segmentOrder = new SegmentType[]{
             /*1*/SegmentType.DARK_GREEN_S, SegmentType.LIGHT_GREEN_M, SegmentType.DARK_GREEN_M, SegmentType.LIGHT_GREEN_M,
             /*2*/SegmentType.PINK_XL, SegmentType.LIGHT_GREEN_L, SegmentType.DARK_GREEN_XL, SegmentType.LIGHT_GREEN_XL,
             /*3*/SegmentType.BLUE_M, SegmentType.DARK_GREEN_L, SegmentType.BLUE_S, SegmentType.PINK_M,
@@ -102,6 +104,45 @@ public class Application2 {
         }
     }
 
+    private static class CTCTIntertwinedRingStringGenerator implements RingStringGenerator {
+        public String generate(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap, List<Coordinate> segments) {
+                    StringBuilder colorOrder = new StringBuilder();
+            StringBuilder thicknessOrder = new StringBuilder();
+
+            for (Coordinate segment : segments) {
+                thicknessOrder.append(thicknessMap.get(segmentOrder[segment.ring * 4 + segment.segmentInRing].thickness));
+                colorOrder.append(colorMap.get(segmentOrder[segment.ring * 4 + segment.segmentInRing].color));
+            }
+            StringBuilder binaryString = new StringBuilder();
+            for(int i=0;i<colorOrder.length();i++){
+                binaryString.append(colorOrder.charAt(i));
+                binaryString.append(thicknessOrder.charAt(i));
+            }
+
+            return binaryString.toString();
+        }
+    }
+    private static class TCTCIntertwinedRingStringGenerator implements RingStringGenerator {
+        public String generate(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap, List<Coordinate> segments) {
+            StringBuilder colorOrder = new StringBuilder();
+            StringBuilder thicknessOrder = new StringBuilder();
+
+            for (Coordinate segment : segments) {
+                thicknessOrder.append(thicknessMap.get(segmentOrder[segment.ring * 4 + segment.segmentInRing].thickness));
+                colorOrder.append(colorMap.get(segmentOrder[segment.ring * 4 + segment.segmentInRing].color));
+            }
+            StringBuilder binaryString = new StringBuilder();
+            for(int i=0;i<colorOrder.length();i++){
+                binaryString.append(thicknessOrder.charAt(i));
+                binaryString.append(colorOrder.charAt(i));
+
+            }
+
+            return binaryString.toString();
+        }
+    }
+
+
     //TODO: What if color/thickness bits are intertwined like c1t1c2t2 so color 01 and thickness 01 turns into the string 0011?
 
 
@@ -119,7 +160,7 @@ public class Application2 {
         }
     }
 
-    private static List<RingStringGenerator> generators = Lists.newArrayList(new CCTTRingStringGenerator(), new CTCTRingStringGenerator(), new TCTCRingStringGenerator(), new TTCCRingStringGenerator());
+    private static List<RingStringGenerator> generators = Lists.newArrayList(new CCTTRingStringGenerator(), new CTCTRingStringGenerator(), new TCTCRingStringGenerator(), new TTCCRingStringGenerator(), new TCTCIntertwinedRingStringGenerator(), new CTCTIntertwinedRingStringGenerator());
 
     public static List<String> inToOutTraversal(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
         List<String> retVal = Lists.newArrayList();
@@ -170,46 +211,119 @@ public class Application2 {
         return retVal;
     }
 
-    public static List<String> spiralIntoOut(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+    public static List<String> spiral(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+        List<String> retVal = Lists.newArrayList();
+
+        for (int genIndex = 0; genIndex < generators.size(); genIndex++) {
+            RingStringGenerator generator = generators.get(genIndex);
+//            StringBuilder outToIn = new StringBuilder();
+            List<String> spiralStrings = Lists.newArrayList();
+            for (int segIndex = 0; segIndex < 4; segIndex++) {
+                List<Coordinate> coordinates = Lists.newArrayList();
+                for (int ring = 0; ring < 16; ring++) {
+                    coordinates.add(new Coordinate(ring, segIndex));
+                }
+                spiralStrings.add(convertBinaryStringToHex(generator.generate(colorMap, thicknessMap, coordinates)));
+            }
+
+            Collection<List<String>> spiralPermutations = Collections2.permutations(spiralStrings);
+            for (List<String> spiralPermutation : spiralPermutations) {
+                StringBuilder spiralString = new StringBuilder();
+                for (String spiral : spiralPermutation) {
+                    spiralString.append(spiral);
+                }
+                retVal.add(spiralString.toString());
+                retVal.add(spiralString.reverse().toString());
+
+            }
+
+        }
+
+        return retVal;
+    }
+
+    public static List<String> subsectionXor(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
         List<String> retVal = Lists.newArrayList();
 
         for (int genIndex = 0; genIndex < generators.size(); genIndex++) {
             RingStringGenerator generator = generators.get(genIndex);
             StringBuilder normal = new StringBuilder();
             StringBuilder normalPrepend = new StringBuilder();
-            List<Coordinate> coordinates = Lists.newArrayList();
-            for (int segIndex = 0; segIndex < 4; segIndex++) {
-                for (int ring = 0; ring < 16; ring++) {
-                    coordinates.add(new Coordinate(ring, segIndex));
+
+            String sectionString = null;
+
+                for (int subSection = 0; subSection < 4; subSection++) {
+                    List<Coordinate> coordinates = Lists.newArrayList();
+                    for (int segStartIndex = 0; segStartIndex < 4; segStartIndex++) {
+                        for (int ring = 0; ring < 16; ring++) {
+                        coordinates.add(new Coordinate(ring, ((segStartIndex * ((ring + subSection) / 4)) / 4) % 4));
+                    }
                 }
+
+
+                String ringChar = generator.generate(colorMap, thicknessMap, coordinates);
+                if(sectionString==null){
+                    sectionString=ringChar;
+                }else{
+                    sectionString = xorBinaryStrings(sectionString, ringChar);
+                }
+
+
             }
-
-            String ringChar = generator.generate(colorMap, thicknessMap, coordinates);
-
-            normal.append(convertBinaryStringToHex(ringChar));
-            normalPrepend.insert(0, convertBinaryStringToHex(ringChar));
+            normal.append(convertBinaryStringToHex(sectionString));
+            normalPrepend.insert(0, convertBinaryStringToHex(sectionString));
             retVal.add(normal.toString());
             retVal.add(normal.reverse().toString());
             retVal.add(normalPrepend.toString());
             retVal.add(normalPrepend.reverse().toString());
+
         }
 
         return retVal;
     }
 
+    private static String xorBinaryStrings(String s1, String s2){
+        if(s1.length()!=s2.length())
+            throw new IllegalArgumentException("Sizes must match");
+        StringBuilder retVal = new StringBuilder();
+        for(int i =0; i<s1.length(); i++){
+            if(s1.charAt(i)==s2.charAt(i)){
+                retVal.append("0");
+            }else{
+                retVal.append("1");
+            }
+        }
+        return retVal.toString();
+    }
+
+    private static String orBinaryStrings(String s1, String s2){
+        if(s1.length()!=s2.length())
+            throw new IllegalArgumentException("Sizes must match");
+        StringBuilder retVal = new StringBuilder();
+        for(int i =0; i<s1.length(); i++){
+            if(s1.charAt(i)=='1'||s2.charAt(i)=='1'){
+                retVal.append("1");
+            }else{
+                retVal.append("0");
+            }
+        }
+        return retVal.toString();
+    }
 
     private static List<String> buildPossiblePrivateKeys(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
         List<String> retVal = Lists.newArrayList();
         retVal.addAll(inToOutTraversal(colorMap, thicknessMap));
-        retVal.addAll(spiralIntoOut(colorMap,thicknessMap));
+        retVal.addAll(spiral(colorMap, thicknessMap));
+//        retVal.addAll(subsectionXor(colorMap, thicknessMap));
+
         return retVal;
 
     }
 
     public static String convertBinaryStringToHex(String s) {
         StringBuilder retVal = new StringBuilder();
-        for(int i=0;i<s.length();i+=16) {
-            String section = s.substring(i,i+16);
+        for (int i = 0; i < s.length(); i += 16) {
+            String section = s.substring(i, i + 16);
             String secitionConverted = Long.toString(Long.parseLong(section, 2), 16);
             while (secitionConverted.length() < 4) {
                 secitionConverted = "0" + secitionConverted;
@@ -270,9 +384,10 @@ public class Application2 {
                 if (count % 1000 == 0 || count < 100) {
 
                     System.out.println(count);
-                    for (String privateKey : privateKeys) {
-                        System.out.println(privateKey);
-                    }
+                    System.out.println(privateKeys.size());
+//                    for (String privateKey : privateKeys) {
+//                        System.out.println(privateKey);
+//                    }
                 }
                 count++;
             }
@@ -281,13 +396,16 @@ public class Application2 {
 
         }
         System.out.println(count);
-        System.out.println(senderPrivKey);
-        System.out.println("Public key: " + publicKey);
+        if(found) {
+            System.out.println(senderPrivKey);
+            System.out.println("Public key: " + publicKey);
+        }
     }
 
     public static void main(String[] args) {
-
+        System.out.println(System.currentTimeMillis());
         brute();
+        System.out.println(System.currentTimeMillis());
 //        simpleRun();
     }
 
