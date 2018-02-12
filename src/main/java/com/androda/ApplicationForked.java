@@ -3,10 +3,7 @@ package com.androda;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.shared.Color;
-import com.shared.Segment;
-import com.shared.SolverUtils;
-import com.shared.Thickness;
+import com.shared.*;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -16,23 +13,7 @@ import java.util.Map;
 
 public class ApplicationForked {
 
-
-    private static Map<Color, String> colorToBinaryMap = Maps.newHashMap();
-    private static Map<Thickness, String> thicknessToBinaryMap = Maps.newHashMap();
-    static {
-        thicknessToBinaryMap.put(Thickness.S, "00");
-        thicknessToBinaryMap.put(Thickness.M, "01");
-        thicknessToBinaryMap.put(Thickness.L, "10");
-        thicknessToBinaryMap.put(Thickness.XL, "11");
-
-        colorToBinaryMap.put(Color.PINK, "00");
-        colorToBinaryMap.put(Color.DG, "01");
-        colorToBinaryMap.put(Color.BLUE, "10");
-        colorToBinaryMap.put(Color.LG, "11");
-    }
-
-    private static List<String> thicknessBinary = Lists.newArrayList("00", "01", "11", "10");
-    private static List<String> colorBinary = Lists.newArrayList("00", "01", "11", "10");
+    private static List<String> possibleBinaryValues = Lists.newArrayList("00", "01", "11", "10");
 
     private static final List<List<String>> segmentOrderByRing = Lists.newArrayList(
             Lists.newArrayList("A1","B2","A2","B2"),
@@ -191,7 +172,10 @@ public class ApplicationForked {
             this.rotationDistance = rotationDistance;
         }
 
-        void appendThenRotate(List<Segment> ring, StringBuilder existing) {
+        void appendThenRotate(List<Segment> ring,
+                              StringBuilder existing,
+                              Map<Color, String> colorToBinaryMap,
+                              Map<Thickness, String> thicknessToBinaryMap) {
             String ringString = SolverUtils.ringToString(colorToBinaryMap, thicknessToBinaryMap, ring, segOrder);
             String ringSoFar;
             if (rightOrLeftAppend) {
@@ -232,7 +216,7 @@ public class ApplicationForked {
 
                             StringBuilder forwardAtr = new StringBuilder(64);
                             for (int f = 0; f < forwardRings.size(); f++) {
-                                appendThenRotate(forwardRings.get(f), forwardAtr);
+                                appendThenRotate(forwardRings.get(f), forwardAtr, colorMap, thicknessMap);
 
 
                             }
@@ -240,12 +224,11 @@ public class ApplicationForked {
 
                             StringBuilder reverseAtr = new StringBuilder(64);
                             for (int r = 0; r < reverseRings.size(); r++) {
-                                appendThenRotate(reverseRings.get(r), reverseAtr);
+                                appendThenRotate(reverseRings.get(r), reverseAtr, colorMap, thicknessMap);
 
 
                             }
                             utils.validateBinaryPk(reverseAtr.toString(), metadataBuilder.toString());
-                            int five = 7;
                         }
 
                     }
@@ -255,7 +238,7 @@ public class ApplicationForked {
 
 
 
-            // try 0 through 32 right rotations per ring
+            // try 0 through 15 right and left rotations per ring
 
             /*
             Append the ring, then rotate the *entire ring string so far*
@@ -271,7 +254,6 @@ public class ApplicationForked {
     }
 
 
-    static final String lineSeparator = System.lineSeparator();
     static String filePath = "C:\\%s\\ethkeychecker2\\allKeysTried.txt";
 
     public static void main(String[] args) {
@@ -279,7 +261,18 @@ public class ApplicationForked {
         SolverUtils utils = new SolverUtils(filePath);
 
         ShiftNucleator shiftNucleator = new ShiftNucleator(utils, segmentsInOrder_contiguous);
-        shiftNucleator.nucleate(colorToBinaryMap, thicknessToBinaryMap);
+
+        Map<Color, String> colorToBinaryMap;
+        Map<Thickness, String> thicknessToBinaryMap;
+
+        for (int p_color = 0; p_color < 16; p_color++) {
+            colorToBinaryMap = SolverUtils.colorMapFromBinaryValues(Permutations.permutation(p_color, possibleBinaryValues));
+            for (int t_val = 0; t_val < 16; t_val++) {
+                thicknessToBinaryMap = SolverUtils.thicknessMapFromBinaryValues(Permutations.permutation(t_val, possibleBinaryValues));
+
+                shiftNucleator.nucleate(colorToBinaryMap, thicknessToBinaryMap);
+            }
+        }
 
 
 
@@ -299,17 +292,7 @@ public class ApplicationForked {
 //            writeToLogFile(fileWriter, ringString);
 //        }
 
-        int five = 7;
 
-    }
-
-    static void writeToLogFile(FileWriter writer, String key) {
-        // todo should be batch file writing
-        try {
-            writer.write(key + lineSeparator);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
 }

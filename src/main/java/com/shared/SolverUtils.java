@@ -1,5 +1,6 @@
 package com.shared;
 
+import com.google.common.collect.Maps;
 import org.ethereum.crypto.ECKey;
 import org.spongycastle.util.encoders.Hex;
 
@@ -8,6 +9,8 @@ import java.io.FileWriter;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class SolverUtils {
 
@@ -16,6 +19,9 @@ public class SolverUtils {
 
     private File logFile = null;
     private FileWriter logWriter;
+
+    private static AtomicLong numPkChecked = new AtomicLong(0);
+    private static long lastPkCountTimestamp;
 
     public SolverUtils(String logFileName) {
         if (logFileName != null && !logFileName.isEmpty()) {
@@ -110,12 +116,31 @@ public class SolverUtils {
     }
 
     public boolean validateHexPk(String privateKey, String metadata) {
+        numPkChecked.incrementAndGet();
         if (privateKey.contains("6060604052")) {
             System.out.println("Found 6060604052 :" + privateKey);
         }
         String publicFromPrivate = getPublicFromPrivate(privateKey);
         recordPk(metadata + privateKey + " : " + publicFromPrivate);
         return publicFromPrivate.toLowerCase().equalsIgnoreCase("D64FDEfa8dbc540c2582a6FC44B8f88FfB6657Ce".toLowerCase());
+    }
+
+    public static Map<Color, String> colorMapFromBinaryValues(List<String> binary) {
+        Map enumListToBinaryMap = Maps.newHashMap();
+        enumListToBinaryMap.put(Color.DG, binary.get(0));
+        enumListToBinaryMap.put(Color.LG, binary.get(1));
+        enumListToBinaryMap.put(Color.BLUE, binary.get(2));
+        enumListToBinaryMap.put(Color.PINK, binary.get(3));
+        return enumListToBinaryMap;
+    }
+
+    public static Map<Thickness, String> thicknessMapFromBinaryValues(List<String> binary) {
+        Map enumListToBinaryMap = Maps.newHashMap();
+        enumListToBinaryMap.put(Thickness.S, binary.get(0));
+        enumListToBinaryMap.put(Thickness.M, binary.get(1));
+        enumListToBinaryMap.put(Thickness.L, binary.get(2));
+        enumListToBinaryMap.put(Thickness.XL, binary.get(3));
+        return enumListToBinaryMap;
     }
 
 }
