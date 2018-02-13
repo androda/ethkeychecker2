@@ -11,14 +11,20 @@ public class SvgGenerator {
             for(int segment =0; segment<4;segment++)
             {
                 SegmentType segmentType = Application2.segmentOrder[ring*4+segment];
-                System.out.println("<path d=\"M "+segment*97+" "+(4+(ring*24))+" l 97 0 \" style=\"stroke: "+colorString.get(segmentType.color)+"; stroke-width: "+thicknessString.get(segmentType.thickness)+"; fill:none;\"></path>"   );
+                System.out.println("<path d=\"M "+segment*200+" "+(8+(ring*48))+" l 200 0 \" style=\"stroke: "+colorString.get(segmentType.color)+"; stroke-width: "+thicknessString.get(segmentType.thickness)+"; fill:none;\"></path>"   );
 
             }
+//            for(int segment =1; segment<2;segment++)
+//            {
+//                SegmentType segmentType = Application2.segmentOrder[ring*4+segment];
+//                System.out.println("<path d=\"M 0 "+(4+((ring+16)*24))+" l 97 0 \" style=\"stroke: rgb(0,0,0)"/*+colorString.get(segmentType.color)*/+"; stroke-width: "+thicknessString.get(segmentType.thickness)+"; fill:none;\"></path>"   );
+//
+//            }
         }
     }
 
     static Map<Color, String> colorString = ImmutableMap.of(Color.DG,"rgb(51, 85, 51)",Color.LG,"rgb(102, 136, 68)",Color.BLUE,"rgb(68, 102, 136)", Color.PINK,"rgb(136, 68, 102)");
-    static Map<Thickness, String> thicknessString = ImmutableMap.of(Thickness.S, "5", Thickness.M,"10", Thickness.L, "15",Thickness.XL,"20");
+    static Map<Thickness, String> thicknessString = ImmutableMap.of(Thickness.S, "10", Thickness.M,"20", Thickness.L, "30",Thickness.XL,"40");
 
 
     /*
