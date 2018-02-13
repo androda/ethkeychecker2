@@ -37,6 +37,16 @@ public class SolverUtils {
 
     StringBuilder pkHolder = new StringBuilder();
 
+    public void flushKeyFile() {
+        if (logWriter != null) {
+            try {
+                logWriter.flush();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     public void recordPk(String pk) {
         if (logFile != null) {
             if (pkHolder.length() < 1024) {
@@ -127,10 +137,10 @@ public class SolverUtils {
 
     public static Map<Color, String> colorMapFromBinaryValues(List<String> binary) {
         Map enumListToBinaryMap = Maps.newHashMap();
-        enumListToBinaryMap.put(Color.DG, binary.get(0));
-        enumListToBinaryMap.put(Color.LG, binary.get(1));
+        enumListToBinaryMap.put(Color.PINK, binary.get(0));
+        enumListToBinaryMap.put(Color.DG, binary.get(1));
         enumListToBinaryMap.put(Color.BLUE, binary.get(2));
-        enumListToBinaryMap.put(Color.PINK, binary.get(3));
+        enumListToBinaryMap.put(Color.LG, binary.get(3));
         return enumListToBinaryMap;
     }
 

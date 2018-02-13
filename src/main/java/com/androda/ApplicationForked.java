@@ -13,6 +13,8 @@ import java.util.Map;
 
 public class ApplicationForked {
 
+    protected static List<Boolean> trueFalse = Lists.newArrayList(Boolean.TRUE, Boolean.FALSE);
+
     private static List<String> possibleBinaryValues = Lists.newArrayList("00", "01", "11", "10");
 
     private static final List<List<String>> segmentOrderByRing = Lists.newArrayList(
@@ -148,15 +150,118 @@ public class ApplicationForked {
             return Lists.partition(segments_reverseOrder, SEG_PER_RING);
         }
 
+        public void setSegOrder(SolverUtils.SegOrder segOrder) {
+            this.segOrder = segOrder;
+        }
+
     }
 
-    private static class ShiftNucleator extends NucleatorBase implements Nucleator {
-        private List<Segment> segments_originalOrder;
-        private List<Segment> segments_reverseOrder;
+    private static class KeyShiftNucleator extends NucleatorBase implements  Nucleator {
 
         boolean rightOrLeftAppend;
         boolean rightOrLeftShift;
 
+        public KeyShiftNucleator(SolverUtils utils, List<Segment> segments) {
+            super(utils, segments);
+        }
+
+        public void setRightOrLeftAppend(boolean rightOrLeftAppend) {
+            this.rightOrLeftAppend = rightOrLeftAppend;
+        }
+
+        public void setRightOrLeftShift(boolean rightOrLeftShift) {
+            this.rightOrLeftShift = rightOrLeftShift;
+        }
+
+        void appendThenRotate(List<Segment> ring,
+                              StringBuilder existing,
+                              Map<Color, String> colorToBinaryMap,
+                              Map<Thickness, String> thicknessToBinaryMap) {
+            String ringString = SolverUtils.ringToString(colorToBinaryMap, thicknessToBinaryMap, ring, segOrder);
+            String ringSoFar;
+            if (rightOrLeftAppend) {
+                existing.append(ringString);
+                ringSoFar = existing.toString();
+            } else {
+                existing.insert(0, ringString);
+                ringSoFar = existing.toString();
+            }
+
+            existing.delete(0, existing.length());
+            existing.append(ringSoFar);
+        }
+
+        List<String> getRotatedKey(Map<?, String> map, boolean rotateKeyRightOrLeft, int keyRotationDistance) {
+            StringBuilder builder = new StringBuilder(8);
+            if (map.get(Color.PINK) == null) {
+                builder.append(map.get(Thickness.S)).append(map.get(Thickness.M)).append(map.get(Thickness.L)).append(map.get(Thickness.XL));
+            } else {
+                builder.append(map.get(Color.PINK)).append(map.get(Color.DG)).append(map.get(Color.BLUE)).append(map.get(Color.LG));
+            }
+            String rotated;
+            if (rotateKeyRightOrLeft) {
+                rotated = SolverUtils.rightRotate(builder.toString(), keyRotationDistance);
+            } else {
+                rotated = SolverUtils.leftRotate(builder.toString(), keyRotationDistance);
+            }
+
+            return Lists.newArrayList(
+                    rotated.substring(0, 2),
+                    rotated.substring(2, 4),
+                    rotated.substring(4, 6),
+                    rotated.substring(6, 8));
+        }
+
+        @Override
+        public void nucleate(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+            List<List<Segment>> forwardRings = getForwardSegmentsByRing();
+            List<List<Segment>> reverseRings = getReverseSegmentsByRing();
+
+            StringBuilder metadataBuilder = new StringBuilder();
+            metadataBuilder//.append(rotationDistance).append('|')
+                    .append(segOrder.name()).append('|')
+                    .append(rightOrLeftAppend ? '1' : '0').append('|')
+                    .append(rightOrLeftShift ? '1' : '0').append('|');
+
+            Map<Color, String> keyRotationColorStringMap;
+            Map<Thickness, String> keyRotationThicknessStringMap;
+
+            StringBuilder forwardKeyRotate = new StringBuilder(64);
+            for (int f = 0; f < forwardRings.size(); f++) {
+                keyRotationColorStringMap =
+                        SolverUtils.colorMapFromBinaryValues(getRotatedKey(colorMap, rightOrLeftAppend,
+                                rightOrLeftAppend ? f : f == 0 ? 0 : 1));
+                keyRotationThicknessStringMap =
+                        SolverUtils.thicknessMapFromBinaryValues(getRotatedKey(thicknessMap, rightOrLeftAppend,
+                                rightOrLeftAppend ? f : f == 0 ? 0 : 1));
+                appendThenRotate(forwardRings.get(f), forwardKeyRotate, keyRotationColorStringMap, keyRotationThicknessStringMap);
+
+
+            }
+            utils.validateBinaryPk(forwardKeyRotate.toString(), "rkCW|" + metadataBuilder.toString());
+
+            StringBuilder reverseKeyRotate = new StringBuilder(64);
+            for (int r = 0; r < reverseRings.size(); r++) {
+                keyRotationColorStringMap =
+                        SolverUtils.colorMapFromBinaryValues(getRotatedKey(colorMap, rightOrLeftAppend,
+                                rightOrLeftAppend ? r : r == 0 ? 0 : 1));
+                keyRotationThicknessStringMap =
+                        SolverUtils.thicknessMapFromBinaryValues(getRotatedKey(thicknessMap, rightOrLeftAppend,
+                                rightOrLeftAppend ? r : r == 0 ? 0 : 1));
+                appendThenRotate(forwardRings.get(r), reverseKeyRotate, keyRotationColorStringMap, keyRotationThicknessStringMap);
+
+
+            }
+            utils.validateBinaryPk(reverseKeyRotate.toString(), "rkCCW" + metadataBuilder.toString());
+
+        }
+
+    }
+
+    private static class ShiftNucleator extends NucleatorBase implements Nucleator {
+
+        boolean rightOrLeftAppend;
+        boolean rightOrLeftShift;
         private int rotationDistance;
 
         final int ARTR = 0;  // append ring then rotate the whole string so far
@@ -170,6 +275,14 @@ public class ApplicationForked {
 
         public void setRotationDistance(int rotationDistance) {
             this.rotationDistance = rotationDistance;
+        }
+
+        public void setRightOrLeftAppend(boolean rightOrLeftAppend) {
+            this.rightOrLeftAppend = rightOrLeftAppend;
+        }
+
+        public void setRightOrLeftShift(boolean rightOrLeftShift) {
+            this.rightOrLeftShift = rightOrLeftShift;
         }
 
         void appendThenRotate(List<Segment> ring,
@@ -194,49 +307,79 @@ public class ApplicationForked {
             }
         }
 
+        List<String> getRotatedKey(Map<?, String> map, boolean rotateKeyRightOrLeft, int keyRotationDistance) {
+            StringBuilder builder = new StringBuilder(8);
+            if (map.get(Color.PINK) == null) {
+                builder.append(map.get(Thickness.S)).append(map.get(Thickness.M)).append(map.get(Thickness.L)).append(map.get(Thickness.XL));
+            } else {
+                builder.append(map.get(Color.PINK)).append(map.get(Color.DG)).append(map.get(Color.BLUE)).append(map.get(Color.LG));
+            }
+            String rotated;
+            if (rotateKeyRightOrLeft) {
+                rotated = SolverUtils.rightRotate(builder.toString(), keyRotationDistance);
+            } else {
+                rotated = SolverUtils.leftRotate(builder.toString(), keyRotationDistance);
+            }
+
+            return Lists.newArrayList(
+                    rotated.substring(0, 2),
+                    rotated.substring(2, 4),
+                    rotated.substring(4, 6),
+                    rotated.substring(6, 8));
+        }
 
         @Override
         public void nucleate(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
             List<List<Segment>> forwardRings = getForwardSegmentsByRing();
             List<List<Segment>> reverseRings = getReverseSegmentsByRing();
 
-            for (int i = 0; i < 17; i++) {
-                this.rotationDistance = i;
-                for (SolverUtils.SegOrder order : SolverUtils.SegOrder.values()) {
-                    this.segOrder = order;
-                    for (Boolean ROLA : trueFalse) {
-                        this.rightOrLeftAppend = ROLA;
-                        for (Boolean ROLS : trueFalse) {
-                            this.rightOrLeftShift = ROLS;
-                            StringBuilder metadataBuilder = new StringBuilder();
-                            metadataBuilder.append(rotationDistance).append('|')
-                                    .append(segOrder.name()).append('|')
-                                    .append(rightOrLeftAppend ? '1' : '0').append('|')
-                                    .append(rightOrLeftShift ? '1' : '0').append('|');
+            StringBuilder metadataBuilder = new StringBuilder();
+            metadataBuilder.append(rotationDistance).append('|')
+                    .append(segOrder.name()).append('|')
+                    .append(rightOrLeftAppend ? '1' : '0').append('|')
+                    .append(rightOrLeftShift ? '1' : '0').append('|');
 
-                            StringBuilder forwardAtr = new StringBuilder(64);
-                            for (int f = 0; f < forwardRings.size(); f++) {
-                                appendThenRotate(forwardRings.get(f), forwardAtr, colorMap, thicknessMap);
+            Map<Color, String> keyRotationColorStringMap;
+            Map<Thickness, String> keyRotationThicknessStringMap;
 
+            StringBuilder forwardAtr = new StringBuilder(64);
+            StringBuilder forwardKeyRotate = new StringBuilder(64);
+            for (int f = 0; f < forwardRings.size(); f++) {
+                keyRotationColorStringMap =
+                        SolverUtils.colorMapFromBinaryValues(getRotatedKey(colorMap, rightOrLeftShift,
+                                rightOrLeftAppend ? f : f == 0 ? 0 : 1));
+                keyRotationThicknessStringMap =
+                        SolverUtils.thicknessMapFromBinaryValues(getRotatedKey(thicknessMap, rightOrLeftShift,
+                                rightOrLeftAppend ? f : f == 0 ? 0 : 1));
+                appendThenRotate(forwardRings.get(f), forwardKeyRotate, keyRotationColorStringMap, keyRotationThicknessStringMap);
 
-                            }
-                            utils.validateBinaryPk(forwardAtr.toString(), metadataBuilder.toString());
+                appendThenRotate(forwardRings.get(f), forwardAtr, colorMap, thicknessMap);
 
-                            StringBuilder reverseAtr = new StringBuilder(64);
-                            for (int r = 0; r < reverseRings.size(); r++) {
-                                appendThenRotate(reverseRings.get(r), reverseAtr, colorMap, thicknessMap);
-
-
-                            }
-                            utils.validateBinaryPk(reverseAtr.toString(), metadataBuilder.toString());
-                        }
-
-                    }
-
-                }
             }
+//                            utils.validateBinaryPk(forwardAtr.toString(), metadataBuilder.toString());
+            utils.validateBinaryPk(forwardKeyRotate.toString(), "rkCW|" + metadataBuilder.toString());
+
+            StringBuilder reverseAtr = new StringBuilder(64);
+            StringBuilder reverseKeyRotate = new StringBuilder(64);
+            for (int r = 0; r < reverseRings.size(); r++) {
+                keyRotationColorStringMap =
+                        SolverUtils.colorMapFromBinaryValues(getRotatedKey(colorMap, rightOrLeftShift,
+                                rightOrLeftAppend ? r : r == 0 ? 0 : 1));
+                keyRotationThicknessStringMap =
+                        SolverUtils.thicknessMapFromBinaryValues(getRotatedKey(thicknessMap, rightOrLeftShift,
+                                rightOrLeftAppend ? r : r == 0 ? 0 : 1));
+                appendThenRotate(forwardRings.get(r), reverseKeyRotate, keyRotationColorStringMap, keyRotationThicknessStringMap);
+
+                appendThenRotate(reverseRings.get(r), reverseAtr, colorMap, thicknessMap);
 
 
+            }
+//                            utils.validateBinaryPk(reverseAtr.toString(), metadataBuilder.toString());
+            utils.validateBinaryPk(reverseKeyRotate.toString(), "rkCCW" + metadataBuilder.toString());
+
+        }
+
+    }
 
             // try 0 through 15 right and left rotations per ring
 
@@ -250,9 +393,6 @@ public class ApplicationForked {
              */
 
 
-        }
-    }
-
 
     static String filePath = "C:\\%s\\ethkeychecker2\\allKeysTried.txt";
 
@@ -265,12 +405,38 @@ public class ApplicationForked {
         Map<Color, String> colorToBinaryMap;
         Map<Thickness, String> thicknessToBinaryMap;
 
+        boolean shiftNucleate = false;
+        boolean keyShiftNucleate = true;
+
         for (int p_color = 0; p_color < 16; p_color++) {
             colorToBinaryMap = SolverUtils.colorMapFromBinaryValues(Permutations.permutation(p_color, possibleBinaryValues));
             for (int t_val = 0; t_val < 16; t_val++) {
                 thicknessToBinaryMap = SolverUtils.thicknessMapFromBinaryValues(Permutations.permutation(t_val, possibleBinaryValues));
 
-                shiftNucleator.nucleate(colorToBinaryMap, thicknessToBinaryMap);
+                if (shiftNucleate) {
+                    for (int rotationDistance = 0; rotationDistance < 17; rotationDistance++) {
+                        shiftNucleator.setRotationDistance(rotationDistance);
+                        for (SolverUtils.SegOrder order : SolverUtils.SegOrder.values()) {
+                            shiftNucleator.setSegOrder(order);
+                            for (Boolean rightOrLeftAppend : trueFalse) {
+                                shiftNucleator.setRightOrLeftAppend(rightOrLeftAppend);
+                                for (Boolean rightOrLeftShift : trueFalse) {
+                                    shiftNucleator.setRightOrLeftShift(rightOrLeftShift);
+                                    shiftNucleator.nucleate(colorToBinaryMap, thicknessToBinaryMap);
+                                }
+                            }
+                        }
+                    }
+                }
+                if (keyShiftNucleate) {
+                    shiftNucleator.setSegOrder(SolverUtils.SegOrder.C_F);
+                    shiftNucleator.setRotationDistance(0);
+                    shiftNucleator.setRightOrLeftAppend(true);
+                    shiftNucleator.setRightOrLeftShift(false);
+
+                    shiftNucleator.nucleate(colorToBinaryMap, thicknessToBinaryMap);
+                }
+
             }
         }
 
