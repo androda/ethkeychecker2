@@ -1,5 +1,6 @@
 package com.shared;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.ethereum.crypto.ECKey;
 import org.spongycastle.util.encoders.Hex;
@@ -9,7 +10,6 @@ import java.io.FileWriter;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SolverUtils {
@@ -66,7 +66,7 @@ public class SolverUtils {
     public enum SegOrder {
         C_F,
         T_F,
-
+        // todo need entries for all color then all thickness and vice versa
     }
 
     private static String segmentToStringColorFirst(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap, Segment seg) {
@@ -129,9 +129,14 @@ public class SolverUtils {
         numPkChecked.incrementAndGet();
         if (privateKey.contains("6060604052")) {
             System.out.println("Found 6060604052 :" + privateKey);
+        } else if (privateKey.contains("6e656f6e")) {
+            System.out.println("Found 'neon' :" + privateKey);
+        } else if (privateKey.contains("6469737472696374")) {
+            System.out.println("Found 'district' :" + privateKey);
         }
+
         String publicFromPrivate = getPublicFromPrivate(privateKey);
-        recordPk(metadata + privateKey + " : " + publicFromPrivate);
+        recordPk(metadata + ","+ privateKey + "," + publicFromPrivate);
         return publicFromPrivate.toLowerCase().equalsIgnoreCase("D64FDEfa8dbc540c2582a6FC44B8f88FfB6657Ce".toLowerCase());
     }
 
@@ -147,10 +152,31 @@ public class SolverUtils {
     public static Map<Thickness, String> thicknessMapFromBinaryValues(List<String> binary) {
         Map enumListToBinaryMap = Maps.newHashMap();
         enumListToBinaryMap.put(Thickness.S, binary.get(0));
-        enumListToBinaryMap.put(Thickness.M, binary.get(1));
-        enumListToBinaryMap.put(Thickness.L, binary.get(2));
-        enumListToBinaryMap.put(Thickness.XL, binary.get(3));
+        enumListToBinaryMap.put(Thickness.XL, binary.get(1));
+        enumListToBinaryMap.put(Thickness.M, binary.get(2));
+        enumListToBinaryMap.put(Thickness.L, binary.get(3));
         return enumListToBinaryMap;
+    }
+
+    public static List<String> getRotatedKey(Map<?, String> map, boolean rotateKeyRightOrLeft, int keyRotationDistance) {
+        StringBuilder builder = new StringBuilder(8);
+        if (map.get(Color.PINK) == null) {
+            builder.append(map.get(Thickness.S)).append(map.get(Thickness.M)).append(map.get(Thickness.L)).append(map.get(Thickness.XL));
+        } else {
+            builder.append(map.get(Color.PINK)).append(map.get(Color.DG)).append(map.get(Color.BLUE)).append(map.get(Color.LG));
+        }
+        String rotated;
+        if (rotateKeyRightOrLeft) {
+            rotated = SolverUtils.rightRotate(builder.toString(), keyRotationDistance);
+        } else {
+            rotated = SolverUtils.leftRotate(builder.toString(), keyRotationDistance);
+        }
+
+        return Lists.newArrayList(
+                rotated.substring(0, 2),
+                rotated.substring(2, 4),
+                rotated.substring(4, 6),
+                rotated.substring(6, 8));
     }
 
 }
