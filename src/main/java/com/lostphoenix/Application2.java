@@ -4,10 +4,9 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.lostphoenix.ColorProcessor.LegendShiftingColorProcessor;
-import com.lostphoenix.ColorProcessor.SimpleColorProcessor;
 import com.lostphoenix.RingStringGenerator.*;
+import com.lostphoenix.RingTraverser.StandardTraverser;
 import com.lostphoenix.ThicknessProcessor.LegendShiftingThicknessProcessor;
-import com.lostphoenix.ThicknessProcessor.SimpleThicknessProcessor;
 import org.ethereum.crypto.ECKey;
 import org.spongycastle.util.encoders.Hex;
 
@@ -60,11 +59,7 @@ public class Application2 {
             /*16*/ SegmentType.DARK_GREEN_L, SegmentType.BLUE_L, SegmentType.PINK_S, SegmentType.DARK_GREEN_L};
 
 
-
-
     //TODO: What if color/thickness bits are intertwined like c1t1c2t2 so color 01 and thickness 01 turns into the string 0011?
-
-
 
 
     public static List<String> inToOutTraversal(List<RingStringGenerator> generators) {
@@ -86,10 +81,10 @@ public class Application2 {
                     );
                     String ringChar = generator.generate(coordinates, segmentOrder);
 
-                    String rightShift = convertBinaryStringToHex(rightRotate(ringChar, ring), 1);
-                    String leftShift = convertBinaryStringToHex(leftRotate(ringChar, ring), 1);
-                    normal.append(convertBinaryStringToHex(ringChar, 1));
-                    normalPrepend.insert(0, convertBinaryStringToHex(ringChar, 1));
+                    String rightShift = StringUtils.convertBinaryStringToHex(StringUtils.rightRotate(ringChar, ring));
+                    String leftShift = StringUtils.convertBinaryStringToHex(StringUtils.leftRotate(ringChar, ring));
+                    normal.append(StringUtils.convertBinaryStringToHex(ringChar));
+                    normalPrepend.insert(0, StringUtils.convertBinaryStringToHex(ringChar));
                     rightShiftBuilder.append(rightShift);
                     rightShiftPrependBuilder.insert(0, rightShift);
                     leftShiftBuilder.append(leftShift);
@@ -127,7 +122,7 @@ public class Application2 {
                 for (int ring = 0; ring < 16; ring++) {
                     coordinates.add(new Coordinate(ring, segIndex));
                 }
-                spiralStrings.add(convertBinaryStringToHex(generator.generate(coordinates, segmentOrder), 16));
+                spiralStrings.add(StringUtils.convertBinaryStringToHex(generator.generate(coordinates, segmentOrder)));
             }
 
             Collection<List<String>> spiralPermutations = Collections2.permutations(spiralStrings);
@@ -186,55 +181,73 @@ public class Application2 {
 //        return retVal;
 //    }
 
-    private static String xorBinaryStrings(String s1, String s2) {
-        if (s1.length() != s2.length())
-            throw new IllegalArgumentException("Sizes must match");
-        StringBuilder retVal = new StringBuilder();
-        for (int i = 0; i < s1.length(); i++) {
-            if (s1.charAt(i) == s2.charAt(i)) {
-                retVal.append("0");
-            } else {
-                retVal.append("1");
-            }
-        }
-        return retVal.toString();
-    }
 
-    private static String orBinaryStrings(String s1, String s2) {
-        if (s1.length() != s2.length())
-            throw new IllegalArgumentException("Sizes must match");
-        StringBuilder retVal = new StringBuilder();
-        for (int i = 0; i < s1.length(); i++) {
-            if (s1.charAt(i) == '1' || s2.charAt(i) == '1') {
-                retVal.append("1");
-            } else {
-                retVal.append("0");
+
+
+
+    List<RingTraverser> traversers = Lists.newArrayList(new StandardTraverser());
+
+    public List<String> traverseRings(RingTraverser traverser, List<RingStringGenerator> generators) {
+        List<String> retVal = Lists.newArrayList();
+
+        for (RingStringGenerator generator : generators) {
+
+            StringBuilder normal = new StringBuilder();
+            StringBuilder leftShiftBuilder = new StringBuilder();
+            StringBuilder rightShiftBuilder = new StringBuilder();
+            StringBuilder normalPrepend = new StringBuilder();
+            StringBuilder leftShiftPrependBuilder = new StringBuilder();
+            StringBuilder rightShiftPrependBuilder = new StringBuilder();
+            List<List<RingCoordinate>> paths = traverser.generatePaths();
+            for (List<RingCoordinate> path : paths) {
+
             }
+            for (int ring = 0; ring < 16; ring++) {
+                for (int segment = 0; segment < 4; segment++) {
+                    List<Coordinate> coordinates = Lists.newArrayList(
+                            new Coordinate(ring, segment)
+
+                    );
+                    String ringChar = generator.generate(coordinates, segmentOrder);
+
+                    String rightShift = StringUtils.convertBinaryStringToHex(StringUtils.rightRotate(ringChar, ring));
+                    String leftShift = StringUtils.convertBinaryStringToHex(StringUtils.leftRotate(ringChar, ring));
+                    normal.append(StringUtils.convertBinaryStringToHex(ringChar));
+                    normalPrepend.insert(0, StringUtils.convertBinaryStringToHex(ringChar));
+                    rightShiftBuilder.append(rightShift);
+                    rightShiftPrependBuilder.insert(0, rightShift);
+                    leftShiftBuilder.append(leftShift);
+                    leftShiftPrependBuilder.insert(0, leftShift);
+
+
+                }
+            }
+            retVal.add(normal.toString());
+            retVal.add(leftShiftBuilder.toString());
+            retVal.add(rightShiftBuilder.toString());
+            retVal.add(normal.reverse().toString());
+            retVal.add(leftShiftBuilder.reverse().toString());
+            retVal.add(rightShiftBuilder.reverse().toString());
+            retVal.add(normalPrepend.toString());
+            retVal.add(rightShiftPrependBuilder.toString());
+            retVal.add(leftShiftPrependBuilder.toString());
+            retVal.add(normalPrepend.reverse().toString());
+            retVal.add(rightShiftPrependBuilder.reverse().toString());
+            retVal.add(leftShiftPrependBuilder.reverse().toString());
         }
-        return retVal.toString();
+
+        return retVal;
     }
 
     private static List<String> buildPossiblePrivateKeys(List<RingStringGenerator> generators) {
         List<String> retVal = Lists.newArrayList();
-        retVal.addAll(inToOutTraversal(generators));
-//        retVal.addAll(spiral(colorMap, thicknessMap));
+
+//        retVal.addAll(inToOutTraversal(generators));
+        retVal.addAll(spiral(generators));
 //        retVal.addAll(subsectionXor(colorMap, thicknessMap));
 
         return retVal;
 
-    }
-
-    public static String convertBinaryStringToHex(String s, int size) {
-        StringBuilder retVal = new StringBuilder();
-        for (int i = 0; i < s.length(); i += 4) {
-            String section = s.substring(i, i + 4);
-            String secitionConverted = Long.toString(Long.parseLong(section, 2), 16);
-            while (secitionConverted.length() < size) {
-                secitionConverted = "0" + secitionConverted;
-            }
-            retVal.append(secitionConverted);
-        }
-        return retVal.toString();
     }
 
 
@@ -294,14 +307,17 @@ public class Application2 {
                 }
 
 
-                if (count % 1000 == 0 || count < 100) {
+//                if (count % 1000 == 0 || count < 100) {
 
                     System.out.println(count);
                     System.out.println(privateKeys.size());
                     for (String privateKey : privateKeys) {
-                        System.out.println(privateKey);
+//                        System.out.println(privateKey);
+                        String ascii = StringUtils.hexToAscii(privateKey);
+                        if(ascii!=null)
+                        System.out.println(ascii);
                     }
-                }
+//                }
                 count++;
             }
             if (found)
@@ -317,7 +333,6 @@ public class Application2 {
 
     public static void main(String[] args) {
         printStatistics();
-
 
 
 //        System.out.println(System.currentTimeMillis());
@@ -351,17 +366,6 @@ public class Application2 {
             System.out.println(s);
             validate(s);
         }
-    }
-
-    private static String leftRotate(String s, int shift) {
-        int i = shift % s.length();
-        return s.substring(i) + s.substring(0, i);
-    }
-
-    private static String rightRotate(String s, int shift) {
-        int i = s.length() - (shift % s.length());
-        return s.substring(i) + s.substring(0, i);
-
     }
 
     private static String getPublicFromPrivate(String senderPrivKey) {
