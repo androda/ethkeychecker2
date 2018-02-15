@@ -87,4 +87,30 @@ public class SolverUtilsTest {
         Assert.assertEquals(SolverUtils.getPublicFromPrivate(pk).toLowerCase(), address.toLowerCase());
     }
 
+    @Test
+    public void testXorBinaryStrings_matchingShouldBeAllZeroes() {
+        String binaryOne = "11110000";
+        String binaryTwo = "11110000";
+
+        Assert.assertEquals("00000000", SolverUtils.xorBinaryStrings(binaryOne, binaryTwo));
+        Assert.assertEquals("00000000", SolverUtils.xorBinaryStrings(binaryTwo, binaryOne));
+    }
+
+    @Test
+    public void testXorBinaryStrings_actuallyXors() {
+        String binaryOne = "10110001";
+        String binaryTwo = "11100010";
+
+        Assert.assertEquals("01010011", SolverUtils.xorBinaryStrings(binaryOne, binaryTwo));
+        Assert.assertEquals("01010011", SolverUtils.xorBinaryStrings(binaryTwo, binaryOne));
+    }
+
+    @Test
+    public void testXorBinaryStrings_differingLengths() {
+        String binaryOne = "10110001";
+        String binaryTwo = "1110";
+
+        Assert.assertEquals("01011111", SolverUtils.xorBinaryStrings(binaryOne, binaryTwo));
+        Assert.assertEquals("01011111", SolverUtils.xorBinaryStrings(binaryTwo, binaryOne));
+    }
 }

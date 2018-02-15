@@ -10,6 +10,7 @@ import java.io.FileWriter;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SolverUtils {
@@ -92,7 +93,6 @@ public class SolverUtils {
         return builder.toString();
     }
 
-
     public static String leftRotate(String s, int shift) {
         int i = shift % s.length();
         return s.substring(i) + s.substring(0, i);
@@ -101,6 +101,66 @@ public class SolverUtils {
     public static String rightRotate(String s, int shift) {
         int i = s.length() - (shift % s.length());
         return s.substring(i) + s.substring(0, i);
+    }
+
+    public static String xorBinaryStrings(final String s1, final String s2) {
+        boolean tesselate = false;
+        if (s1.length() != s2.length()) {
+            if ((((double) s1.length()) / ((double) s2.length())) % 1 == 0
+                    || (((double) s2.length()) / ((double) s1.length())) % 1 == 0) {
+                tesselate = true;
+            } else {
+                throw new IllegalArgumentException("Sizes must match");
+            }
+        }
+        StringBuilder retVal = new StringBuilder();
+
+        String stringOne = null;
+        String stringTwo = null;
+
+        if (tesselate) {
+            boolean s1IsShorter = s1.length() < s2.length();
+            StringBuilder xorBuilder = new StringBuilder();
+
+            Callable<Boolean> matchingProvider;
+            Callable<String> stringProvider;
+            if (s1IsShorter) {
+                matchingProvider = () -> !(xorBuilder.length() == s2.length());
+                stringProvider = () -> s1;
+            } else {
+                matchingProvider = () -> !(xorBuilder.length() == s1.length());
+                stringProvider = () -> s2;
+            }
+
+            try {
+                while (matchingProvider.call()) {
+                    xorBuilder.append(stringProvider.call());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            if (s1IsShorter) {
+                stringOne = xorBuilder.toString();
+            } else {
+                stringTwo = xorBuilder.toString();
+            }
+        }
+
+        if (stringOne == null) {
+            stringOne = s1;
+        }
+        if (stringTwo == null) {
+            stringTwo = s2;
+        }
+
+        for (int i = 0; i < stringOne.length(); i++) {
+            if (stringOne.charAt(i) == stringTwo.charAt(i)) {
+                retVal.append("0");
+            } else {
+                retVal.append("1");
+            }
+        }
+        return retVal.toString();
     }
 
     public static String getPublicFromPrivate(String senderPrivKey) {
