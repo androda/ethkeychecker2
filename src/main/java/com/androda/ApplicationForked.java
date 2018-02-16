@@ -2,18 +2,12 @@ package com.androda;
 
 import com.androda.solvers.KeyShiftNucleator;
 import com.androda.solvers.RingShiftNucleator;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.shared.*;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import static com.shared.SolverUtils.getRotatedKey;
 
 public class ApplicationForked {
 
@@ -116,16 +110,14 @@ public class ApplicationForked {
         KeyShiftNucleator keyShiftNucleator = new KeyShiftNucleator(utils, segmentsInOrder_contiguous);
 
 
-        Map<Color, String> colorToBinaryMap;
-        Map<Thickness, String> thicknessToBinaryMap;
+        boolean performRingShift = true;
+        boolean performKeyShift = false;
 
-        boolean performRingShift = false;
-        boolean performKeyShift = true;
+        Collections2.permutations(possibleBinaryValues).forEach(colorPermutation -> {
+            Map<Color, String> colorToBinaryMap = SolverUtils.colorMapFromBinaryValues(colorPermutation);
+            Collections2.permutations(possibleBinaryValues).forEach(thicknessPermutation -> {
+                Map<Thickness, String> thicknessToBinaryMap = SolverUtils.thicknessMapFromBinaryValues(thicknessPermutation);
 
-        for (int p_color = 0; p_color < 16; p_color++) {
-            colorToBinaryMap = SolverUtils.colorMapFromBinaryValues(Permutations.permutation(p_color, possibleBinaryValues));
-            for (int t_val = 0; t_val < 16; t_val++) {
-                thicknessToBinaryMap = SolverUtils.thicknessMapFromBinaryValues(Permutations.permutation(t_val, possibleBinaryValues));
                 for (Boolean rightOrLeftShift : trueFalse) {
                     for (Boolean rightOrLeftAppend : trueFalse) {
                         for (SolverUtils.SegOrder segOrder : SolverUtils.SegOrder.values()) {
@@ -151,11 +143,10 @@ public class ApplicationForked {
                         }
                     }
                 }
-            }
-        }
+            });
+        });
 
-
-
+        utils.shutdownLoggers();
 //
 //        StringBuilder outputBuilder = new StringBuilder();
 //        StringBuilder ringBuilder;

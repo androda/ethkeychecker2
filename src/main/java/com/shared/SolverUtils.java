@@ -8,9 +8,14 @@ import org.spongycastle.util.encoders.Hex;
 import java.io.File;
 import java.io.FileWriter;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SolverUtils {
@@ -20,6 +25,10 @@ public class SolverUtils {
 
     private File logFile = null;
     private FileWriter logWriter;
+
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+    private static AtomicLong lastNumPkChecked = new AtomicLong(0);
 
     private static AtomicLong numPkChecked = new AtomicLong(0);
     private static long lastPkCountTimestamp;
@@ -34,39 +43,73 @@ public class SolverUtils {
                 throw new RuntimeException(e);
             }
         }
+        scheduler.scheduleAtFixedRate(this::printPrivateKeyCheckingSpeed, 0, 1, TimeUnit.SECONDS);
+    }
+
+    interface ThrowingRunnable {
+        void run() throws Exception;
+    }
+
+    void runAndRethrow(ThrowingRunnable r) {
+        try {
+            r.run();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    void printPrivateKeyCheckingSpeed() {
+        if (lastNumPkChecked.get() == 0) {
+            lastNumPkChecked.set(numPkChecked.get());
+        } else {
+            long lastTime = lastNumPkChecked.get();
+            long present = numPkChecked.get();
+
+            System.out.println((present - lastTime) + " Private Keys Per Second");
+            lastNumPkChecked.set(present);
+        }
+    }
+
+    public void shutdownLoggers() {
+        if (logWriter != null) {
+            runAndRethrow(() -> logWriter.flush());
+        }
+        scheduler.shutdownNow();
     }
 
     StringBuilder pkHolder = new StringBuilder();
-
-    public void flushKeyFile() {
-        if (logWriter != null) {
-            try {
-                logWriter.flush();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
 
     public void recordPk(String pk) {
         if (logFile != null) {
             if (pkHolder.length() < 1024) {
                 pkHolder.append(pk).append(lineSeparator);
             } else {
-                try {
+                runAndRethrow(() -> {
                     logWriter.write(pkHolder.toString());
                     logWriter.flush();
                     pkHolder.delete(0, pkHolder.length());
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                });
             }
         }
     }
 
     public enum SegOrder {
+        /**
+         * Color then thickness (each segment)
+         */
         C_F,
+        /**
+         * Thickness then color (each segment)
+         */
         T_F,
+        /**
+         * All color, then all thickness (ring)
+         */
+        CCT,
+        /**
+         * All thickness, then all color (ring)
+         */
+        TTC
         // todo need entries for all color then all thickness and vice versa
     }
 
@@ -87,6 +130,14 @@ public class SolverUtils {
                 break;
             case T_F:
                 ring.forEach(seg -> builder.append(segmentToStringThicknessFirst(colorMap, thicknessMap, seg)));
+                break;
+            case CCT:
+                ring.forEach(seg -> builder.append(colorMap.get(seg.color)));
+                ring.forEach(seg -> builder.append(thicknessMap.get(seg.thickness)));
+                break;
+            case TTC:
+                ring.forEach(seg -> builder.append(thicknessMap.get(seg.thickness)));
+                ring.forEach(seg -> builder.append(colorMap.get(seg.color)));
                 break;
         }
 
@@ -163,6 +214,11 @@ public class SolverUtils {
         return retVal.toString();
     }
 
+    private static String getPublicFromPrivate(BigInteger privateKey) {
+        ECKey key = ECKey.fromPrivate(privateKey);
+        return Hex.toHexString(key.getAddress());
+    }
+
     public static String getPublicFromPrivate(String senderPrivKey) {
         String publicKey;
         BigInteger pk = new BigInteger(senderPrivKey, 16);
@@ -178,11 +234,22 @@ public class SolverUtils {
         return publicFromPrivate.equalsIgnoreCase("D64FDEfa8dbc540c2582a6FC44B8f88FfB6657Ce");
     }
 
+    // Found here: https://stackoverflow.com/questions/4211705/binary-to-text-in-java
+    public static String bytesToAlphabeticString(byte[] bytes) {
+        CharBuffer cb = ByteBuffer.wrap(bytes).asCharBuffer();
+        return cb.toString();
+    }
+
     public void validateBinaryPk(String binaryKey, String metadata) {
-        BigInteger integer = new BigInteger(binaryKey, 2);
-        if (validateHexPk(integer.toString(16), metadata)) {
-            throw new Error("YOU WIN!!!!!!!!!!! " + integer.toString(16));
+        numPkChecked.incrementAndGet();
+
+        BigInteger privateKey = new BigInteger(binaryKey, 2);
+        String publicKey = getPublicFromPrivate(privateKey);
+
+        if (publicKeyMatchesContest(publicKey)) {
+            throw new Error("YOU WIN!!!!!!!!!!! " + privateKey.toString(16));
         }
+        recordPk(metadata + ","+ privateKey.toString(16) + "," + publicKey + "," + bytesToAlphabeticString(privateKey.toByteArray()));
     }
 
     public boolean validateHexPk(String privateKey, String metadata) {
@@ -197,7 +264,11 @@ public class SolverUtils {
 
         String publicFromPrivate = getPublicFromPrivate(privateKey);
         recordPk(metadata + ","+ privateKey + "," + publicFromPrivate);
-        return publicFromPrivate.toLowerCase().equalsIgnoreCase("D64FDEfa8dbc540c2582a6FC44B8f88FfB6657Ce".toLowerCase());
+        return publicKeyMatchesContest(publicFromPrivate);
+    }
+
+    public boolean publicKeyMatchesContest(String publicKey) {
+        return publicKey.toLowerCase().contains("D64FDEfa8dbc540c2582a6FC44B8f88FfB6657Ce".toLowerCase());
     }
 
     public static Map<Color, String> colorMapFromBinaryValues(List<String> binary) {
