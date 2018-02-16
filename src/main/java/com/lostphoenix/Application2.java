@@ -5,7 +5,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.lostphoenix.ColorProcessor.LegendShiftingColorProcessor;
 import com.lostphoenix.RingStringGenerator.*;
-import com.lostphoenix.RingTraverser.StandardTraverser;
 import com.lostphoenix.ThicknessProcessor.LegendShiftingThicknessProcessor;
 import org.ethereum.crypto.ECKey;
 import org.spongycastle.util.encoders.Hex;
@@ -17,48 +16,6 @@ import java.util.List;
 import java.util.Map;
 
 public class Application2 {
-
-
-//    static Segment[] segments = new Segment[]{
-//            new Segment(Color.DG, Thickness.S), new Segment(Color.LG, Thickness.M), new Segment(Color.DG, Thickness.M), new Segment(Color.LG, Thickness.M),
-//            new Segment(Color.PINK, Thickness.XL), new Segment(Color.LG, Thickness.L), new Segment(Color.DG, Thickness.XL), new Segment(Color.LG, Thickness.XL),
-//            new Segment(Color.BLUE, Thickness.M), new Segment(Color.DG, Thickness.L), new Segment(Color.BLUE, Thickness.S), new Segment(Color.PINK, Thickness.M),
-//            new Segment(Color.PINK, Thickness.L), new Segment(Color.PINK, Thickness.L), new Segment(Color.DG, Thickness.M), new Segment(Color.PINK, Thickness.L),
-//            new Segment(Color.LG, Thickness.M), new Segment(Color.DG, Thickness.S), new Segment(Color.PINK, Thickness.M), new Segment(Color.BLUE, Thickness.L),
-//            new Segment(Color.DG, Thickness.XL), new Segment(Color.BLUE, Thickness.S), new Segment(Color.LG, Thickness.XL), new Segment(Color.LG, Thickness.XL),
-//            new Segment(Color.BLUE, Thickness.S), new Segment(Color.DG, Thickness.L), new Segment(Color.PINK, Thickness.XL), new Segment(Color.BLUE, Thickness.M),
-//            new Segment(Color.PINK, Thickness.L), new Segment(Color.BLUE, Thickness.XL), new Segment(Color.PINK, Thickness.M), new Segment(Color.LG, Thickness.S),
-//            new Segment(Color.LG, Thickness.XL), new Segment(Color.PINK, Thickness.XL), new Segment(Color.BLUE, Thickness.L), new Segment(Color.LG, Thickness.L),
-//            new Segment(Color.BLUE, Thickness.L), new Segment(Color.BLUE, Thickness.S), new Segment(Color.LG, Thickness.M), new Segment(Color.DG, Thickness.M),
-//            new Segment(Color.BLUE, Thickness.S), new Segment(Color.DG, Thickness.S), new Segment(Color.DG, Thickness.M), new Segment(Color.PINK, Thickness.S),
-//            new Segment(Color.LG, Thickness.M), new Segment(Color.DG, Thickness.L), new Segment(Color.LG, Thickness.S), new Segment(Color.BLUE, Thickness.XL),
-//            new Segment(Color.BLUE, Thickness.XL), new Segment(Color.LG, Thickness.L), new Segment(Color.DG, Thickness.L), new Segment(Color.LG, Thickness.S),
-//            new Segment(Color.LG, Thickness.XL), new Segment(Color.LG, Thickness.S), new Segment(Color.BLUE, Thickness.XL), new Segment(Color.BLUE, Thickness.XL),
-//            new Segment(Color.PINK, Thickness.M), new Segment(Color.BLUE, Thickness.M), new Segment(Color.PINK, Thickness.L), new Segment(Color.LG, Thickness.M),
-//            new Segment(Color.DG, Thickness.L), new Segment(Color.BLUE, Thickness.L), new Segment(Color.PINK, Thickness.S), new Segment(Color.DG, Thickness.L),
-//    };
-
-
-    //    static int[] hexOrder = new int[]{0, 5, 4, 5, 14, 9, 12, 13, 7, 8, 3, 6, 10, 10, 4, 10, 5, 0, 6, 11, 12, 3, 13, 13, 3, 8, 14, 7, 10, 15, 6, 1, 13, 14, 11, 9, 11, 3, 5, 4, 3, 0, 4, 2, 5, 8, 1, 15, 15, 9, 8, 1, 13, 1, 15, 15, 6, 7, 10, 5, 8, 11, 2, 8};
-    public static SegmentType[] segmentOrder = new SegmentType[]{
-            /*1*/SegmentType.DARK_GREEN_S, SegmentType.LIGHT_GREEN_M, SegmentType.DARK_GREEN_M, SegmentType.LIGHT_GREEN_M,
-            /*2*/SegmentType.PINK_XL, SegmentType.LIGHT_GREEN_L, SegmentType.DARK_GREEN_XL, SegmentType.LIGHT_GREEN_XL,
-            /*3*/SegmentType.BLUE_M, SegmentType.DARK_GREEN_L, SegmentType.BLUE_S, SegmentType.PINK_M,
-            /*4*/SegmentType.PINK_L, SegmentType.PINK_L, SegmentType.DARK_GREEN_M, SegmentType.PINK_L,
-            /*5*/SegmentType.LIGHT_GREEN_M, SegmentType.DARK_GREEN_S, SegmentType.PINK_M, SegmentType.BLUE_L,
-            /*6*/SegmentType.DARK_GREEN_XL, SegmentType.BLUE_S, SegmentType.LIGHT_GREEN_XL, SegmentType.LIGHT_GREEN_XL,
-            /*7*/SegmentType.BLUE_S, SegmentType.DARK_GREEN_L, SegmentType.PINK_XL, SegmentType.BLUE_M,
-            /*8*/SegmentType.PINK_L, SegmentType.BLUE_XL, SegmentType.PINK_M, SegmentType.LIGHT_GREEN_S,
-            /*9*/SegmentType.LIGHT_GREEN_XL, SegmentType.PINK_XL, SegmentType.BLUE_L, SegmentType.LIGHT_GREEN_L,
-            /*10*/SegmentType.BLUE_L, SegmentType.BLUE_S, SegmentType.LIGHT_GREEN_M, SegmentType.DARK_GREEN_M,
-            /*11*/SegmentType.BLUE_S, SegmentType.DARK_GREEN_S, SegmentType.DARK_GREEN_M, SegmentType.PINK_S,
-            /*12*/SegmentType.LIGHT_GREEN_M, SegmentType.DARK_GREEN_L, SegmentType.LIGHT_GREEN_S, SegmentType.BLUE_XL,
-            /*13*/SegmentType.BLUE_XL, SegmentType.LIGHT_GREEN_L, SegmentType.DARK_GREEN_L, SegmentType.LIGHT_GREEN_S,
-            /*14*/SegmentType.LIGHT_GREEN_XL, SegmentType.LIGHT_GREEN_S, SegmentType.BLUE_XL, SegmentType.BLUE_XL,
-            /*15*/ SegmentType.PINK_M, SegmentType.BLUE_M, SegmentType.PINK_L, SegmentType.LIGHT_GREEN_M,
-            /*16*/ SegmentType.DARK_GREEN_L, SegmentType.BLUE_L, SegmentType.PINK_S, SegmentType.DARK_GREEN_L};
-
-
     //TODO: What if color/thickness bits are intertwined like c1t1c2t2 so color 01 and thickness 01 turns into the string 0011?
 
 
@@ -73,41 +30,85 @@ public class Application2 {
             StringBuilder normalPrepend = new StringBuilder();
             StringBuilder leftShiftPrependBuilder = new StringBuilder();
             StringBuilder rightShiftPrependBuilder = new StringBuilder();
+            List<String> ringBinaryStrings = Lists.newArrayList();
             for (int ring = 0; ring < 16; ring++) {
+                List<Coordinate> coordinates = Lists.newArrayList();
                 for (int segment = 0; segment < 4; segment++) {
-                    List<Coordinate> coordinates = Lists.newArrayList(
-                            new Coordinate(ring, segment)
-
-                    );
-                    String ringChar = generator.generate(coordinates, segmentOrder);
-
-                    String rightShift = StringUtils.convertBinaryStringToHex(StringUtils.rightRotate(ringChar, ring));
-                    String leftShift = StringUtils.convertBinaryStringToHex(StringUtils.leftRotate(ringChar, ring));
-                    normal.append(StringUtils.convertBinaryStringToHex(ringChar));
-                    normalPrepend.insert(0, StringUtils.convertBinaryStringToHex(ringChar));
-                    rightShiftBuilder.append(rightShift);
-                    rightShiftPrependBuilder.insert(0, rightShift);
-                    leftShiftBuilder.append(leftShift);
-                    leftShiftPrependBuilder.insert(0, leftShift);
-
-
+                    coordinates.add(new Coordinate(ring, segment));
                 }
+
+                String ringStringBinary = generator.generate(coordinates, Ring.segmentOrder);
+                ringBinaryStrings.add(ringStringBinary);
+                //Bit shift segments left and right
+                String rightShift = StringUtils.convertBinaryStringToHex(StringUtils.rightRotate(ringStringBinary, ring));
+                String leftShift = StringUtils.convertBinaryStringToHex(StringUtils.leftRotate(ringStringBinary, ring));
+                normal.append(StringUtils.convertBinaryStringToHex(ringStringBinary));
+
+                normalPrepend.insert(0, StringUtils.convertBinaryStringToHex(ringStringBinary));
+
+                rightShiftBuilder.append(rightShift);
+                rightShiftPrependBuilder.insert(0, rightShift);
+                leftShiftBuilder.append(leftShift);
+                leftShiftPrependBuilder.insert(0, leftShift);
+
+
             }
-            retVal.add(normal.toString());
-            retVal.add(leftShiftBuilder.toString());
-            retVal.add(rightShiftBuilder.toString());
-            retVal.add(normal.reverse().toString());
-            retVal.add(leftShiftBuilder.reverse().toString());
-            retVal.add(rightShiftBuilder.reverse().toString());
-            retVal.add(normalPrepend.toString());
-            retVal.add(rightShiftPrependBuilder.toString());
-            retVal.add(leftShiftPrependBuilder.toString());
-            retVal.add(normalPrepend.reverse().toString());
-            retVal.add(rightShiftPrependBuilder.reverse().toString());
-            retVal.add(leftShiftPrependBuilder.reverse().toString());
+
+            // Generate sliced keys
+
+            retVal.addAll(generateSliceStrings(ringBinaryStrings));
+
+//            retVal.add(normal.toString());
+//            retVal.add(leftShiftBuilder.toString());
+//            retVal.add(rightShiftBuilder.toString());
+//            retVal.add(normal.reverse().toString());
+//            retVal.add(leftShiftBuilder.reverse().toString());
+//            retVal.add(rightShiftBuilder.reverse().toString());
+//            retVal.add(normalPrepend.toString());
+//            retVal.add(rightShiftPrependBuilder.toString());
+//            retVal.add(leftShiftPrependBuilder.toString());
+//            retVal.add(normalPrepend.reverse().toString());
+//            retVal.add(rightShiftPrependBuilder.reverse().toString());
+//            retVal.add(leftShiftPrependBuilder.reverse().toString());
         }
 
         return retVal;
+    }
+
+    private static List<String> generateSliceStrings(List<String> ringBinaryStrings) {
+        List<String> sliceStrings = Lists.newArrayList();
+        List<String> inToOutNoShift = Lists.newArrayList();
+        List<String> outToInNoShift = Lists.newArrayList();
+        for (int slice = 0; slice < 16; slice++) {
+            StringBuilder sliceString = new StringBuilder();
+            for (int ring = 0; ring < 16; ring++) {
+                //String of 16 bits
+                String ringString = ringBinaryStrings.get(ring);
+                sliceString.append(ringString.charAt((16 + slice - ring) % 16));
+            }
+            inToOutNoShift.add(sliceString.toString());
+            outToInNoShift.add(sliceString.reverse().toString());
+        }
+        for (int offset = 0; offset < 16; offset++) {
+            StringBuilder cwInToOut = new StringBuilder();
+            StringBuilder ccwInToOut = new StringBuilder();
+            StringBuilder cwOutToIn = new StringBuilder();
+            StringBuilder ccwOutToIn = new StringBuilder();
+            for (int slice = 0; slice < 16; slice++) {
+                cwInToOut.append(inToOutNoShift.get((slice + offset) % 16));
+                ccwInToOut.append(inToOutNoShift.get((16 + slice - offset) % 16));
+                cwOutToIn.append(outToInNoShift.get((slice + offset) % 16));
+                ccwOutToIn.append(outToInNoShift.get((16 + slice - offset) % 16));
+
+
+            }
+            sliceStrings.add(StringUtils.convertBinaryStringToHex(cwInToOut.toString()));
+            sliceStrings.add(StringUtils.convertBinaryStringToHex(ccwInToOut.toString()));
+            sliceStrings.add(StringUtils.convertBinaryStringToHex(cwOutToIn.toString()));
+            sliceStrings.add(StringUtils.convertBinaryStringToHex(ccwOutToIn.toString()));
+
+        }
+        return sliceStrings;
     }
 
     public static List<String> spiral(List<RingStringGenerator> generators) {
@@ -122,7 +123,7 @@ public class Application2 {
                 for (int ring = 0; ring < 16; ring++) {
                     coordinates.add(new Coordinate(ring, segIndex));
                 }
-                spiralStrings.add(StringUtils.convertBinaryStringToHex(generator.generate(coordinates, segmentOrder)));
+                spiralStrings.add(StringUtils.convertBinaryStringToHex(generator.generate(coordinates, Ring.segmentOrder)));
             }
 
             Collection<List<String>> spiralPermutations = Collections2.permutations(spiralStrings);
@@ -182,67 +183,10 @@ public class Application2 {
 //    }
 
 
-
-
-
-    List<RingTraverser> traversers = Lists.newArrayList(new StandardTraverser());
-
-    public List<String> traverseRings(RingTraverser traverser, List<RingStringGenerator> generators) {
-        List<String> retVal = Lists.newArrayList();
-
-        for (RingStringGenerator generator : generators) {
-
-            StringBuilder normal = new StringBuilder();
-            StringBuilder leftShiftBuilder = new StringBuilder();
-            StringBuilder rightShiftBuilder = new StringBuilder();
-            StringBuilder normalPrepend = new StringBuilder();
-            StringBuilder leftShiftPrependBuilder = new StringBuilder();
-            StringBuilder rightShiftPrependBuilder = new StringBuilder();
-            List<List<RingCoordinate>> paths = traverser.generatePaths();
-            for (List<RingCoordinate> path : paths) {
-
-            }
-            for (int ring = 0; ring < 16; ring++) {
-                for (int segment = 0; segment < 4; segment++) {
-                    List<Coordinate> coordinates = Lists.newArrayList(
-                            new Coordinate(ring, segment)
-
-                    );
-                    String ringChar = generator.generate(coordinates, segmentOrder);
-
-                    String rightShift = StringUtils.convertBinaryStringToHex(StringUtils.rightRotate(ringChar, ring));
-                    String leftShift = StringUtils.convertBinaryStringToHex(StringUtils.leftRotate(ringChar, ring));
-                    normal.append(StringUtils.convertBinaryStringToHex(ringChar));
-                    normalPrepend.insert(0, StringUtils.convertBinaryStringToHex(ringChar));
-                    rightShiftBuilder.append(rightShift);
-                    rightShiftPrependBuilder.insert(0, rightShift);
-                    leftShiftBuilder.append(leftShift);
-                    leftShiftPrependBuilder.insert(0, leftShift);
-
-
-                }
-            }
-            retVal.add(normal.toString());
-            retVal.add(leftShiftBuilder.toString());
-            retVal.add(rightShiftBuilder.toString());
-            retVal.add(normal.reverse().toString());
-            retVal.add(leftShiftBuilder.reverse().toString());
-            retVal.add(rightShiftBuilder.reverse().toString());
-            retVal.add(normalPrepend.toString());
-            retVal.add(rightShiftPrependBuilder.toString());
-            retVal.add(leftShiftPrependBuilder.toString());
-            retVal.add(normalPrepend.reverse().toString());
-            retVal.add(rightShiftPrependBuilder.reverse().toString());
-            retVal.add(leftShiftPrependBuilder.reverse().toString());
-        }
-
-        return retVal;
-    }
-
     private static List<String> buildPossiblePrivateKeys(List<RingStringGenerator> generators) {
         List<String> retVal = Lists.newArrayList();
 
-//        retVal.addAll(inToOutTraversal(generators));
+        retVal.addAll(inToOutTraversal(generators));
         retVal.addAll(spiral(generators));
 //        retVal.addAll(subsectionXor(colorMap, thicknessMap));
 
@@ -309,14 +253,14 @@ public class Application2 {
 
 //                if (count % 1000 == 0 || count < 100) {
 
-                    System.out.println(count);
-                    System.out.println(privateKeys.size());
-                    for (String privateKey : privateKeys) {
-//                        System.out.println(privateKey);
-                        String ascii = StringUtils.hexToAscii(privateKey);
-                        if(ascii!=null)
-                        System.out.println(ascii);
-                    }
+                System.out.println(count);
+                System.out.println(privateKeys.size());
+//                for (String privateKey : privateKeys) {
+//                    System.out.println(privateKey);
+//                    String ascii = StringUtils.hexToAscii(privateKey);
+//                    if (ascii != null)
+//                        System.out.println(ascii);
+//                }
 //                }
                 count++;
             }
@@ -389,7 +333,7 @@ public class Application2 {
         Map<Color, Integer> colorCounts = Maps.newHashMap();
 
         Map<Thickness, Integer> thicknessCounts = Maps.newHashMap();
-        for (SegmentType segmentType : segmentOrder) {
+        for (SegmentType segmentType : Ring.segmentOrder) {
             Integer count = counts.get(segmentType);
             if (count == null) {
                 count = 0;
