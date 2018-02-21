@@ -12,10 +12,7 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SolverUtils {
@@ -31,7 +28,8 @@ public class SolverUtils {
     private static AtomicLong lastNumPkChecked = new AtomicLong(0);
 
     private static AtomicLong numPkChecked = new AtomicLong(0);
-    private static long lastPkCountTimestamp;
+
+    private static final int counter_divisor = 5;
 
     public SolverUtils(String logFileName) {
         if (logFileName != null && !logFileName.isEmpty()) {
@@ -43,7 +41,7 @@ public class SolverUtils {
                 throw new RuntimeException(e);
             }
         }
-        scheduler.scheduleAtFixedRate(this::printPrivateKeyCheckingSpeed, 0, 1, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::printKeyCheckingSpeedAndLogKeys, 0, counter_divisor, TimeUnit.SECONDS);
     }
 
     interface ThrowingRunnable {
@@ -58,15 +56,26 @@ public class SolverUtils {
         }
     }
 
-    void printPrivateKeyCheckingSpeed() {
+    void printKeyCheckingSpeedAndLogKeys() {
         if (lastNumPkChecked.get() == 0) {
             lastNumPkChecked.set(numPkChecked.get());
         } else {
             long lastTime = lastNumPkChecked.get();
             long present = numPkChecked.get();
 
-            System.out.println((present - lastTime) + " Private Keys Per Second");
+            System.out.println(((present - lastTime) / counter_divisor) + " Private Keys Per Second");
             lastNumPkChecked.set(present);
+        }
+        if (logFile != null && logWriter != null && pkInformationHolder.size() > 1024) {
+            StringBuilder pkLogFileBuffer = new StringBuilder(8192);
+            pkInformationHolder.forEach(pkInfo -> {
+                pkLogFileBuffer.append(pkInfo).append(lineSeparator);
+                pkInformationHolder.remove(pkInfo);
+            });
+            runAndRethrow(() -> {
+                logWriter.write(pkLogFileBuffer.toString());
+                logWriter.flush();
+            });
         }
     }
 
@@ -77,19 +86,10 @@ public class SolverUtils {
         scheduler.shutdownNow();
     }
 
-    StringBuilder pkHolder = new StringBuilder();
-
-    public void recordPk(String pk) {
-        if (logFile != null) {
-            if (pkHolder.length() < 1024) {
-                pkHolder.append(pk).append(lineSeparator);
-            } else {
-                runAndRethrow(() -> {
-                    logWriter.write(pkHolder.toString());
-                    logWriter.flush();
-                    pkHolder.delete(0, pkHolder.length());
-                });
-            }
+    ConcurrentLinkedQueue<String> pkInformationHolder = new ConcurrentLinkedQueue<>();
+    public void recordPkMetadataBlob(String pk) {
+        if (logFile != null && logWriter != null) {
+            pkInformationHolder.offer(pk);
         }
     }
 
@@ -97,45 +97,100 @@ public class SolverUtils {
         /**
          * Color then thickness (each segment)
          */
-        C_F,
+        COLOR_FIRST,
         /**
          * Thickness then color (each segment)
          */
-        T_F,
+        THICK_FIRST,
+        /**
+         * Color first, color inverted
+         */
+        Co_F_INVERT,
+        /**
+         * Thickness first, thickness inverted
+         */
+        Th_F_INVERT,
+        /**
+         * Color first, all inverted
+         */
+        C_F_INV_ALL,
+        /**
+         * Thickness first, all inverted
+         */
+        T_F_INV_ALL,
         /**
          * All color, then all thickness (ring)
          */
-        CCT,
+        ALL_COLOR_T,
         /**
          * All thickness, then all color (ring)
          */
-        TTC
-        // todo need entries for all color then all thickness and vice versa
+        ALL_THICK_C
     }
 
-    private static String segmentToStringColorFirst(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap, Segment seg) {
-        return colorMap.get(seg.color) + thicknessMap.get(seg.thickness);
+    public static String differenceToString(List<Segment> ring) {
+
+        // Some sort of map of left color, right color to binary
+        // Some sort of map of left thickness, right thickness to binary
+        return null;
     }
 
-    private static String segmentToStringThicknessFirst(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap, Segment seg) {
-        return thicknessMap.get(seg.thickness) + colorMap.get(seg.color);
+    private static String segmentToStringColorFirst(Map<Color, String> colorMap,
+                                                    Map<Color, String> invertedColorMap,
+                                                    Map<Thickness, String> thicknessMap,
+                                                    Map<Thickness, String> invertedThicknessMap,
+                                                    Segment seg,
+                                                    boolean invertColor,
+                                                    boolean invertThickness) {
+        return (invertColor ? invertedColorMap.get(seg.color) : colorMap.get(seg.color))
+                +
+                (invertThickness ? invertedThicknessMap.get(seg.thickness): thicknessMap.get(seg.thickness));
     }
 
-    public static String ringToString(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap, List<Segment> ring, SegOrder type) {
+    private static String segmentToStringThicknessFirst(Map<Color, String> colorMap,
+                                                        Map<Color, String> invertedColorMap,
+                                                        Map<Thickness, String> thicknessMap,
+                                                        Map<Thickness, String> invertedThicknessMap,
+                                                        Segment seg,
+                                                        boolean invertColor,
+                                                        boolean invertThickness) {
+        return (invertThickness ? invertedThicknessMap.get(seg.thickness): thicknessMap.get(seg.thickness))
+                +
+                (invertColor ? invertedColorMap.get(seg.color) : colorMap.get(seg.color));
+    }
+
+    public static String ringToString(Map<Color, String> colorMap,
+                                      Map<Color, String> invertedColorMap,
+                                      Map<Thickness, String> thicknessMap,
+                                      Map<Thickness, String> invertedThicknessMap,
+                                      List<Segment> ring,
+                                      SegOrder segOrder) {
         StringBuilder builder = new StringBuilder();
 
-        switch (type) {
-            case C_F:
-                ring.forEach(seg -> builder.append(segmentToStringColorFirst(colorMap, thicknessMap, seg)));
+        switch (segOrder) {
+            case COLOR_FIRST:
+                ring.forEach(seg -> builder.append(segmentToStringColorFirst(colorMap, invertedColorMap, thicknessMap, invertedThicknessMap, seg, false, false)));
                 break;
-            case T_F:
-                ring.forEach(seg -> builder.append(segmentToStringThicknessFirst(colorMap, thicknessMap, seg)));
+            case Co_F_INVERT:
+                ring.forEach(seg -> builder.append(segmentToStringColorFirst(colorMap, invertedColorMap, thicknessMap, invertedThicknessMap, seg, true, false)));
                 break;
-            case CCT:
+            case C_F_INV_ALL:
+                ring.forEach(seg -> builder.append(segmentToStringColorFirst(colorMap, invertedColorMap, thicknessMap, invertedThicknessMap, seg, true, true)));
+                break;
+            case THICK_FIRST:
+                ring.forEach(seg -> builder.append(segmentToStringThicknessFirst(colorMap, invertedColorMap, thicknessMap, invertedThicknessMap, seg, false, false)));
+                break;
+            case Th_F_INVERT:
+                ring.forEach(seg -> builder.append(segmentToStringThicknessFirst(colorMap, invertedColorMap, thicknessMap, invertedThicknessMap, seg, false, true)));
+                break;
+            case T_F_INV_ALL:
+                ring.forEach(seg -> builder.append(segmentToStringThicknessFirst(colorMap, invertedColorMap, thicknessMap, invertedThicknessMap, seg, true, true)));
+                break;
+            case ALL_COLOR_T:
                 ring.forEach(seg -> builder.append(colorMap.get(seg.color)));
                 ring.forEach(seg -> builder.append(thicknessMap.get(seg.thickness)));
                 break;
-            case TTC:
+            case ALL_THICK_C:
                 ring.forEach(seg -> builder.append(thicknessMap.get(seg.thickness)));
                 ring.forEach(seg -> builder.append(colorMap.get(seg.color)));
                 break;
@@ -216,6 +271,7 @@ public class SolverUtils {
 
     private static String getPublicFromPrivate(BigInteger privateKey) {
         ECKey key = ECKey.fromPrivate(privateKey);
+
         return Hex.toHexString(key.getAddress());
     }
 
@@ -225,7 +281,7 @@ public class SolverUtils {
         // System.out.println("Private key: " + pk.toString(16));
 
         ECKey key = ECKey.fromPrivate(pk);
-        publicKey = Hex.toHexString(key.getAddress());
+        publicKey = Hex.toHexString(key.getAddress()).toLowerCase();
         return publicKey;
     }
 
@@ -244,31 +300,34 @@ public class SolverUtils {
         numPkChecked.incrementAndGet();
 
         BigInteger privateKey = new BigInteger(binaryKey, 2);
-        String publicKey = getPublicFromPrivate(privateKey);
+        String privateKeyHex = privateKey.toString(16);
+
+        if (privateKeyHex.contains("6060604052")) {
+            System.out.println("Found 6060604052 :" + privateKey);
+        } else if (privateKeyHex.contains("6e656f6e")) {
+            System.out.println("Found 'neon' :" + privateKey);
+        } else if (privateKeyHex.contains("6469737472696374")) {
+            System.out.println("Found 'district' :" + privateKey);
+        }
+
+        String publicKey = getPublicFromPrivate(privateKey).toLowerCase();
 
         if (publicKeyMatchesContest(publicKey)) {
             throw new Error("YOU WIN!!!!!!!!!!! " + privateKey.toString(16));
         }
-        recordPk(metadata + ","+ privateKey.toString(16) + "," + publicKey + "," + bytesToAlphabeticString(privateKey.toByteArray()));
+        recordPkMetadataBlob(metadata + ","+ privateKey.toString(16) + "," + publicKey); //+ "," + bytesToAlphabeticString(privateKey.toByteArray()));
     }
 
     public boolean validateHexPk(String privateKey, String metadata) {
         numPkChecked.incrementAndGet();
-        if (privateKey.contains("6060604052")) {
-            System.out.println("Found 6060604052 :" + privateKey);
-        } else if (privateKey.contains("6e656f6e")) {
-            System.out.println("Found 'neon' :" + privateKey);
-        } else if (privateKey.contains("6469737472696374")) {
-            System.out.println("Found 'district' :" + privateKey);
-        }
 
         String publicFromPrivate = getPublicFromPrivate(privateKey);
-        recordPk(metadata + ","+ privateKey + "," + publicFromPrivate);
+        recordPkMetadataBlob(metadata + ","+ privateKey + "," + publicFromPrivate);
         return publicKeyMatchesContest(publicFromPrivate);
     }
 
     public boolean publicKeyMatchesContest(String publicKey) {
-        return publicKey.toLowerCase().contains("D64FDEfa8dbc540c2582a6FC44B8f88FfB6657Ce".toLowerCase());
+        return publicKey.contains("D64FDEfa8dbc540c2582a6FC44B8f88FfB6657Ce".toLowerCase());
     }
 
     public static Map<Color, String> colorMapFromBinaryValues(List<String> binary) {
@@ -287,6 +346,28 @@ public class SolverUtils {
         enumListToBinaryMap.put(Thickness.M, binary.get(2));
         enumListToBinaryMap.put(Thickness.L, binary.get(3));
         return enumListToBinaryMap;
+    }
+
+    public static Map<Color, String> invertColorToBinaryStringMap(Map<Color, String> colorMap) {
+        Map<Color, String> newColorMap = Maps.newHashMap();
+        char[] inverted = new char[2];
+        for (Map.Entry<Color, String> colorEntry : colorMap.entrySet()) {
+            inverted[0] = colorEntry.getValue().charAt(1);
+            inverted[1] = colorEntry.getValue().charAt(0);
+            newColorMap.put(colorEntry.getKey(), new String(inverted));
+        }
+        return newColorMap;
+    }
+
+    public static Map<Thickness, String> invertThicknessToBinaryStringMap(Map<Thickness, String> colorMap) {
+        Map<Thickness, String> newThicknessMap = Maps.newHashMap();
+        char[] inverted = new char[2];
+        for (Map.Entry<Thickness, String> colorEntry : colorMap.entrySet()) {
+            inverted[0] = colorEntry.getValue().charAt(1);
+            inverted[1] = colorEntry.getValue().charAt(0);
+            newThicknessMap.put(colorEntry.getKey(), new String(inverted));
+        }
+        return newThicknessMap;
     }
 
     public static List<String> getRotatedKey(Map<?, String> map, boolean rotateKeyRightOrLeft, int keyRotationDistance) {

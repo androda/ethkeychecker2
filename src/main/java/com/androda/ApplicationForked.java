@@ -1,13 +1,17 @@
 package com.androda;
 
 import com.androda.solvers.KeyShiftNucleator;
-import com.androda.solvers.RingShiftNucleator;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.shared.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
+import java.util.stream.IntStream;
 
 public class ApplicationForked {
 
@@ -34,7 +38,9 @@ public class ApplicationForked {
             Lists.newArrayList("A3","D3","C1","A3"));
 
     private static final List<Segment> segmentsInOrder_contiguous = Lists.newArrayList();
-    private static final List<List<Segment>> segmentsInOrder = Lists.newArrayList();
+    private static final List<Segment> segments_reverseOrder;
+    private static final List<List<Segment>> segmentsByRing_originalOrder = Lists.newArrayList();
+    private static final List<List<Segment>> segmentsByRing_reverseOrder;
     static {
         for (List<String> ringSegments : segmentOrderByRing) {
             List<Segment> segments;
@@ -75,8 +81,16 @@ public class ApplicationForked {
                 segmentsInOrder_contiguous.add(s);
                 segments.add(s);
             }
-            segmentsInOrder.add(segments);
+            segmentsByRing_originalOrder.add(segments);
         }
+        segments_reverseOrder = new ArrayList<>(segmentsInOrder_contiguous);
+        Collections.reverse(segments_reverseOrder);
+        segmentsByRing_reverseOrder = new ArrayList<>(segmentsByRing_originalOrder.size());
+        for (int i = 0; i < segmentsByRing_originalOrder.size(); i++) {
+            segmentsByRing_reverseOrder.add(new ArrayList<>(segmentsByRing_originalOrder.get(i)));
+            Collections.reverse(segmentsByRing_reverseOrder.get(i));
+        }
+        Collections.reverse(segmentsByRing_reverseOrder);
     }
 
     // iterate through the segment values
@@ -106,64 +120,88 @@ public class ApplicationForked {
         filePath = String.format(filePath, args[0]);
         SolverUtils utils = new SolverUtils(filePath);
 
-        RingShiftNucleator ringShiftNucleator = new RingShiftNucleator(utils, segmentsInOrder_contiguous);
-        KeyShiftNucleator keyShiftNucleator = new KeyShiftNucleator(utils, segmentsInOrder_contiguous);
-
+        KeyShiftNucleator keyShiftNucleator = new KeyShiftNucleator(utils, segmentsInOrder_contiguous, segmentsByRing_originalOrder);
 
         boolean performRingShift = true;
-        boolean performKeyShift = false;
+        boolean performKeyShift = true;
+        final ForkJoinPool threadLimiterPool = new ForkJoinPool(4);
+        try {
+            Collections2.permutations(possibleBinaryValues).forEach(colorPermutation -> {
+                Map<Color, String> colorMap = SolverUtils.colorMapFromBinaryValues(colorPermutation);
+                Map<Color, String> invColorMap = SolverUtils.invertColorToBinaryStringMap(colorMap);
+                Collections2.permutations(possibleBinaryValues).forEach(thicknessPermutation -> {
+                    Map<Thickness, String> thicknessMap = SolverUtils.thicknessMapFromBinaryValues(thicknessPermutation);
+                    Map<Thickness, String> invThicknessMap = SolverUtils.invertThicknessToBinaryStringMap(thicknessMap);
+                    for (SolverUtils.SegOrder segOrder : SolverUtils.SegOrder.values()) {
+                        if (performRingShift) {
+                            IntStream.rangeClosed(0, 15).parallel().forEach(rotationDistance -> {
+                                StringBuilder metadataBuilder = new StringBuilder();
+                                String ringSoFar;
 
-        Collections2.permutations(possibleBinaryValues).forEach(colorPermutation -> {
-            Map<Color, String> colorToBinaryMap = SolverUtils.colorMapFromBinaryValues(colorPermutation);
-            Collections2.permutations(possibleBinaryValues).forEach(thicknessPermutation -> {
-                Map<Thickness, String> thicknessToBinaryMap = SolverUtils.thicknessMapFromBinaryValues(thicknessPermutation);
+                                StringBuilder rotateRightATR = new StringBuilder(64);
+                                StringBuilder rotateRightATL = new StringBuilder(64);
 
-                for (Boolean rightOrLeftShift : trueFalse) {
-                    for (Boolean rightOrLeftAppend : trueFalse) {
-                        for (SolverUtils.SegOrder segOrder : SolverUtils.SegOrder.values()) {
-                            if (performRingShift) {
-                                ringShiftNucleator.setRightOrLeftAppend(rightOrLeftAppend);
-                                ringShiftNucleator.setRightOrLeftShift(rightOrLeftShift);
-                                ringShiftNucleator.setSegOrder(segOrder);
-                                for (int rotationDistance = 0; rotationDistance < 17; rotationDistance++) {
-                                    ringShiftNucleator.setRotationDistance(rotationDistance);
-                                    ringShiftNucleator.nucleate(colorToBinaryMap, thicknessToBinaryMap);
+                                StringBuilder rotateLeftATR = new StringBuilder(64);
+                                StringBuilder rotateLeftATL = new StringBuilder(64);
+                                for (int f = 0; f < segmentsByRing_originalOrder.size(); f++) {
+                                    rotateRightATR.append(SolverUtils.ringToString(colorMap, invColorMap, thicknessMap, invThicknessMap, segmentsByRing_originalOrder.get(f), segOrder));
+                                    rotateLeftATR.append(SolverUtils.ringToString(colorMap, invColorMap, thicknessMap, invThicknessMap, segmentsByRing_originalOrder.get(f), segOrder));
+                                    rotateRightATL.insert(0, SolverUtils.ringToString(colorMap, invColorMap, thicknessMap, invThicknessMap, segmentsByRing_originalOrder.get(f), segOrder));
+                                    rotateLeftATL.insert(0, SolverUtils.ringToString(colorMap, invColorMap, thicknessMap, invThicknessMap, segmentsByRing_originalOrder.get(f), segOrder));
+                                    if (rotationDistance != 0) {
+                                        ringSoFar = rotateRightATR.toString();
+                                        rotateRightATR.delete(0, rotateRightATR.length());
+                                        rotateRightATR.append(SolverUtils.rightRotate(ringSoFar, rotationDistance));
+
+                                        ringSoFar = rotateRightATL.toString();
+                                        rotateRightATL.delete(0, rotateRightATL.length());
+                                        rotateRightATL.append(SolverUtils.rightRotate(ringSoFar, rotationDistance));
+
+                                        ringSoFar = rotateLeftATR.toString();
+                                        rotateLeftATR.delete(0, rotateLeftATR.length());
+                                        rotateLeftATR.append(SolverUtils.leftRotate(ringSoFar, rotationDistance));
+
+                                        ringSoFar = rotateLeftATL.toString();
+                                        rotateLeftATL.delete(0, rotateLeftATL.length());
+                                        rotateLeftATL.append(SolverUtils.leftRotate(ringSoFar, rotationDistance));
+                                    }
                                 }
-                            }
+                                metadataBuilder.append(rotationDistance).append('|')
+                                        .append(segOrder.name()).append('|')
+                                        .append("RS").append('|');
+                                utils.validateBinaryPk(rotateRightATR.toString(), "RR_ATR|" + metadataBuilder.toString());
+                                utils.validateBinaryPk(rotateRightATL.toString(), "RR_ATL|" + metadataBuilder.toString());
+                                utils.validateBinaryPk(rotateLeftATR.toString(), "RL_ATR|" + metadataBuilder.toString());
+                                utils.validateBinaryPk(rotateLeftATL.toString(), "RL_ATL|" + metadataBuilder.toString());
+                            });
 
-                            if (performKeyShift) {
-                                keyShiftNucleator.setRightOrLeftAppend(rightOrLeftAppend);
-                                keyShiftNucleator.setRightOrLeftShift(rightOrLeftShift);
-                                keyShiftNucleator.setSegOrder(segOrder);
-                                for (KeyShiftNucleator.KeyShiftMode keyShiftMode : KeyShiftNucleator.KeyShiftMode.values()) {
-                                    keyShiftNucleator.setKeyShiftMode(keyShiftMode);
-                                    keyShiftNucleator.nucleate(colorToBinaryMap, thicknessToBinaryMap);
-                                }
-                            }
+
+                        /*
+                        Append the ring, then rotate the *entire ring string so far*
+                        Rotate the ring, then append
+                        Rotate the ring based on the number it is from the core
+                        Rotate the ring just once each time
+                        Maybe the first ring is not rotated
+
+                         */
+
+                        }
+
+                        if (performKeyShift) {
+//                                keyShiftNucleator.setRightOrLeftAppend(rightOrLeftAppend);
+//                                keyShiftNucleator.setRightOrLeftShift(rightOrLeftShift);
+//                                keyShiftNucleator.setSegOrder(segOrder);
+//                                for (KeyShiftNucleator.KeyShiftMode keyShiftMode : KeyShiftNucleator.KeyShiftMode.values()) {
+//                                    keyShiftNucleator.setKeyShiftMode(keyShiftMode);
+//                                    keyShiftNucleator.nucleate(colorToBinaryMap, thicknessToBinaryMap);
+//                                }
                         }
                     }
-                }
+                });
             });
-        });
-
-        utils.shutdownLoggers();
-//
-//        StringBuilder outputBuilder = new StringBuilder();
-//        StringBuilder ringBuilder;
-//
-//        for (List<Segment> ring : segmentsInOrder) {
-//            ringBuilder = new StringBuilder();
-//            for (Segment segment : ring) {
-////                ringBuilder.append()
-////                ringBuilder.append(colorToBinaryMap.get(segment.color)).append(thicknessToBinaryMap.get(segment.thickness));
-//            }
-//
-//            String ringString = Long.toString(Long.parseLong(ringBuilder.toString(), 2), 16);
-//            outputBuilder.append(ringString);
-//            writeToLogFile(fileWriter, ringString);
-//        }
-
-
+        } finally {
+            utils.shutdownLoggers();
+        }
     }
 
 }

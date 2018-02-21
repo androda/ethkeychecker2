@@ -1,5 +1,6 @@
 package com.androda.solvers;
 
+import com.androda.interfaces.Nucleator;
 import com.shared.Color;
 import com.shared.Segment;
 import com.shared.SolverUtils;
@@ -16,8 +17,8 @@ public class KeyShiftNucleator extends NucleatorBase implements Nucleator {
     boolean rightOrLeftShift;
     KeyShiftMode keyShiftMode;
 
-    public KeyShiftNucleator(SolverUtils utils, List<Segment> segments) {
-        super(utils, segments);
+    public KeyShiftNucleator(SolverUtils utils, List<Segment> segments, List<List<Segment>> segmentsByRing) {
+        super(utils, segments, segmentsByRing);
     }
 
     public void setRightOrLeftAppend(boolean rightOrLeftAppend) {
@@ -41,9 +42,11 @@ public class KeyShiftNucleator extends NucleatorBase implements Nucleator {
 
     void appendThenRotate(List<Segment> ring,
                           StringBuilder existing,
-                          Map<Color, String> colorToBinaryMap,
-                          Map<Thickness, String> thicknessToBinaryMap) {
-        String ringString = SolverUtils.ringToString(colorToBinaryMap, thicknessToBinaryMap, ring, segOrder);
+                          Map<Color, String> colorMap,
+                          Map<Color, String> invColorMap,
+                          Map<Thickness, String> thicknessMap,
+                          Map<Thickness, String> invThicknessMap) {
+        String ringString = SolverUtils.ringToString(colorMap, invColorMap, thicknessMap, invThicknessMap, ring, segOrder);
         String ringSoFar;
         if (rightOrLeftAppend) {
             existing.append(ringString);
@@ -58,14 +61,16 @@ public class KeyShiftNucleator extends NucleatorBase implements Nucleator {
     }
 
     @Override
-    public void nucleate(Map<Color, String> colorMap, Map<Thickness, String> thicknessMap) {
+    public void nucleate(Map<Color, String> colorMap, Map<Color, String> invColorMap, Map<Thickness, String> thicknessMap, Map<Thickness, String> invThicknessMap) {
         List<List<Segment>> forwardRings = getForwardSegmentsByRing();
         List<List<Segment>> reverseRings = getReverseSegmentsByRing();
 
         StringBuilder metadataBuilder = new StringBuilder();
 
         Map<Color, String> keyRotationColorStringMap;
+        Map<Color, String> invKeyRotationColorStringMap;
         Map<Thickness, String> keyRotationThicknessStringMap;
+        Map<Thickness, String> invKeyRotationThicknessStringMap;
 
         StringBuilder forwardKeyRotate = new StringBuilder(64);
         int rotateBy = -1;
@@ -90,7 +95,9 @@ public class KeyShiftNucleator extends NucleatorBase implements Nucleator {
                     SolverUtils.colorMapFromBinaryValues(getRotatedKey(colorMap, rightOrLeftShift, rotateBy));
             keyRotationThicknessStringMap =
                     SolverUtils.thicknessMapFromBinaryValues(getRotatedKey(thicknessMap, rightOrLeftShift, rotateBy));
-            appendThenRotate(forwardRings.get(f), forwardKeyRotate, keyRotationColorStringMap, keyRotationThicknessStringMap);
+            invKeyRotationColorStringMap = SolverUtils.invertColorToBinaryStringMap(keyRotationColorStringMap);
+            invKeyRotationThicknessStringMap = SolverUtils.invertThicknessToBinaryStringMap(keyRotationThicknessStringMap);
+            appendThenRotate(forwardRings.get(f), forwardKeyRotate, keyRotationColorStringMap, invKeyRotationColorStringMap, keyRotationThicknessStringMap, invKeyRotationThicknessStringMap);
 
 
         }
@@ -124,7 +131,9 @@ public class KeyShiftNucleator extends NucleatorBase implements Nucleator {
                     SolverUtils.colorMapFromBinaryValues(getRotatedKey(colorMap, !rightOrLeftShift, rotateBy));
             keyRotationThicknessStringMap =
                     SolverUtils.thicknessMapFromBinaryValues(getRotatedKey(thicknessMap, !rightOrLeftShift, rotateBy));
-            appendThenRotate(forwardRings.get(r), reverseKeyRotate, keyRotationColorStringMap, keyRotationThicknessStringMap);
+            invKeyRotationColorStringMap = SolverUtils.invertColorToBinaryStringMap(keyRotationColorStringMap);
+            invKeyRotationThicknessStringMap = SolverUtils.invertThicknessToBinaryStringMap(keyRotationThicknessStringMap);
+            appendThenRotate(forwardRings.get(r), reverseKeyRotate, keyRotationColorStringMap, invKeyRotationColorStringMap, keyRotationThicknessStringMap, invKeyRotationThicknessStringMap);
         }
         metadataBuilder.delete(0, metadataBuilder.length())
                 .append("rkCCW|")
