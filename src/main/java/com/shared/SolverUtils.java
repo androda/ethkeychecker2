@@ -27,7 +27,7 @@ public class SolverUtils {
 
     private static AtomicLong lastNumPkChecked = new AtomicLong(0);
 
-    private static AtomicLong numPkChecked = new AtomicLong(0);
+    public static AtomicLong numPkChecked = new AtomicLong(0);
 
     private static final int counter_divisor = 5;
 
@@ -87,9 +87,9 @@ public class SolverUtils {
     }
 
     ConcurrentLinkedQueue<String> pkInformationHolder = new ConcurrentLinkedQueue<>();
-    public void recordPkMetadataBlob(String pk) {
+    public void recordPkMetadataBlob(String metadata, String privateKey, String publicKey) {
         if (logFile != null && logWriter != null) {
-            pkInformationHolder.offer(pk);
+            pkInformationHolder.offer(metadata == null ? "" + privateKey + "," + publicKey : metadata + "," + privateKey + "," + publicKey);
         }
     }
 
@@ -315,14 +315,22 @@ public class SolverUtils {
         if (publicKeyMatchesContest(publicKey)) {
             throw new Error("YOU WIN!!!!!!!!!!! " + privateKey.toString(16));
         }
-        recordPkMetadataBlob(metadata + ","+ privateKey.toString(16) + "," + publicKey); //+ "," + bytesToAlphabeticString(privateKey.toByteArray()));
+        recordPkMetadataBlob(metadata, privateKey.toString(16), publicKey); //+ "," + bytesToAlphabeticString(privateKey.toByteArray()));
     }
 
     public boolean validateHexPk(String privateKey, String metadata) {
         numPkChecked.incrementAndGet();
 
+        if (privateKey.contains("6060604052")) {
+            System.out.println("Found 6060604052 :" + privateKey);
+        } else if (privateKey.contains("6e656f6e")) {
+            System.out.println("Found 'neon' :" + privateKey);
+        } else if (privateKey.contains("6469737472696374")) {
+            System.out.println("Found 'district' :" + privateKey);
+        }
+
         String publicFromPrivate = getPublicFromPrivate(privateKey);
-        recordPkMetadataBlob(metadata + ","+ privateKey + "," + publicFromPrivate);
+        recordPkMetadataBlob(metadata, privateKey, publicFromPrivate);
         return publicKeyMatchesContest(publicFromPrivate);
     }
 

@@ -4,14 +4,16 @@ import com.androda.solvers.KeyShiftNucleator;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.shared.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.time.Instant;
+import java.util.*;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class ApplicationForked {
 
@@ -20,22 +22,25 @@ public class ApplicationForked {
     private static List<String> possibleBinaryValues = Lists.newArrayList("00", "01", "10", "11");
 
     private static final List<List<String>> segmentOrderByRing = Lists.newArrayList(
-            Lists.newArrayList("A1","B2","A2","B2"),
-            Lists.newArrayList("C4","B3","A4","B4"),
-            Lists.newArrayList("D2","A3","D1","C2"),
-            Lists.newArrayList("C3","C3","A2","C3"),
-            Lists.newArrayList("B2","A1","C2","D3"),
-            Lists.newArrayList("A4","D1","B4","B4"),
-            Lists.newArrayList("D1","A3","C4","D2"),
-            Lists.newArrayList("C3","D4","C2","B1"),
-            Lists.newArrayList("B4","C4","D3","B3"),
-            Lists.newArrayList("D3","D1","B2","A2"),
-            Lists.newArrayList("D1","A1","A2","C1"),
-            Lists.newArrayList("B2","A3","B1","D4"),
-            Lists.newArrayList("D4","B3","A3","B1"),
-            Lists.newArrayList("B4","B1","D4","D4"),
-            Lists.newArrayList("C2","D2","C3","B2"),
-            Lists.newArrayList("A3","D3","C1","A3"));
+            Lists.newArrayList("D1","L2","D2","L2"),
+            Lists.newArrayList("P4","L3","D4","L4"),
+            Lists.newArrayList("B2","D3","B1","P2"),
+            Lists.newArrayList("P3","P3","D2","P3"),
+            Lists.newArrayList("L2","D1","P2","B3"),
+            Lists.newArrayList("D4","B1","L4","L4"),
+            Lists.newArrayList("B1","D3","P4","B2"),
+            Lists.newArrayList("P3","B4","P2","L1"),
+            Lists.newArrayList("L4","P4","B3","L3"),
+            Lists.newArrayList("B3","B1","L2","D2"),
+            Lists.newArrayList("B1","D1","D2","P1"),
+            Lists.newArrayList("L2","D3","L1","B4"),
+            Lists.newArrayList("B4","L3","D3","L1"),
+            Lists.newArrayList("L4","L1","B4","B4"),
+            Lists.newArrayList("P2","B2","P3","L2"),
+            Lists.newArrayList("D3","B3","P1","D3"));
+    private static final List<String> allSegmentsInOrder_string = Lists.newArrayList();
+    static final Map<Integer, Set<String>> frequencyToSegmentType = Maps.newHashMap();
+    static final Map<String, Integer> segmentTypeToFrequency = Maps.newHashMap();
 
     private static final List<Segment> segmentsInOrder_contiguous = Lists.newArrayList();
     private static final List<Segment> segments_reverseOrder;
@@ -49,17 +54,20 @@ public class ApplicationForked {
 
             segments = Lists.newArrayList();
             for (String segment : ringSegments) {
+                allSegmentsInOrder_string.add(segment);
+                segmentTypeToFrequency.put(segment, (segmentTypeToFrequency.getOrDefault(segment, 0) + 1));
+
                 switch (segment.charAt(0)) {
-                    case 'A':
+                    case 'D':
                         c = Color.DG;
                         break;
-                    case 'B':
+                    case 'L':
                         c = Color.LG;
                         break;
-                    case 'C':
+                    case 'P':
                         c = Color.PINK;
                         break;
-                    case 'D':
+                    case 'B':
                         c = Color.BLUE;
                         break;
                 }
@@ -91,6 +99,12 @@ public class ApplicationForked {
             Collections.reverse(segmentsByRing_reverseOrder.get(i));
         }
         Collections.reverse(segmentsByRing_reverseOrder);
+
+        for (Map.Entry<String, Integer> segToFrequency : segmentTypeToFrequency.entrySet()) {
+            Set<String> segmentsOccurring = frequencyToSegmentType.getOrDefault(segToFrequency.getValue(), Sets.newHashSet());
+            segmentsOccurring.add(segToFrequency.getKey());
+            frequencyToSegmentType.put(segToFrequency.getValue(), segmentsOccurring);
+        }
     }
 
     // iterate through the segment values
@@ -114,6 +128,7 @@ public class ApplicationForked {
 
      */
 
+    static final String hexabet = "0123456789abcdef";
     static String filePath = "C:\\%s\\ethkeychecker2\\allKeysTried.txt";
 
     public static void main(String[] args) {
@@ -123,57 +138,95 @@ public class ApplicationForked {
         KeyShiftNucleator keyShiftNucleator = new KeyShiftNucleator(utils, segmentsInOrder_contiguous, segmentsByRing_originalOrder);
 
         boolean performRingShift = true;
-        boolean performKeyShift = true;
-        final ForkJoinPool threadLimiterPool = new ForkJoinPool(4);
+        boolean performKeyShift = false;
+        boolean performFrequencyAnalysisKeyGen = true;
+
         try {
-            Collections2.permutations(possibleBinaryValues).forEach(colorPermutation -> {
-                Map<Color, String> colorMap = SolverUtils.colorMapFromBinaryValues(colorPermutation);
-                Map<Color, String> invColorMap = SolverUtils.invertColorToBinaryStringMap(colorMap);
-                Collections2.permutations(possibleBinaryValues).forEach(thicknessPermutation -> {
-                    Map<Thickness, String> thicknessMap = SolverUtils.thicknessMapFromBinaryValues(thicknessPermutation);
-                    Map<Thickness, String> invThicknessMap = SolverUtils.invertThicknessToBinaryStringMap(thicknessMap);
-                    for (SolverUtils.SegOrder segOrder : SolverUtils.SegOrder.values()) {
-                        if (performRingShift) {
-                            IntStream.rangeClosed(0, 15).parallel().forEach(rotationDistance -> {
-                                StringBuilder metadataBuilder = new StringBuilder();
-                                String ringSoFar;
+            if (performFrequencyAnalysisKeyGen) {
+                // Permute through in frequency order
+                Collections2.permutations(frequencyToSegmentType.get(2)).forEach(twoPerm -> {
+                    Collections2.permutations(frequencyToSegmentType.get(3)).parallelStream().forEach(threePerm -> {
+                        Collections2.permutations(frequencyToSegmentType.get(4)).forEach(fourPerm -> {
+                            Collections2.permutations(frequencyToSegmentType.get(5)).forEach(fivePerm -> {
+                                Collections2.permutations(frequencyToSegmentType.get(6)).forEach(sixPerm -> {
+                                    Permutations.of(twoPerm, threePerm, fourPerm, fivePerm, sixPerm)
+                                    .map(q -> q.collect(Collectors.toList()))
+                                    .forEach(lls -> {
+                                        Map<String, Character> hexabetMap = Maps.newHashMap();
+                                        AtomicInteger i = new AtomicInteger(0);
+                                        for (int rotateBy = 0; rotateBy < 16; rotateBy++) {
+                                            StringBuilder keyBuilder = new StringBuilder(64);
+                                            String rotatedHexabet = SolverUtils.rightRotate(hexabet, rotateBy);
+                                            for (List<String> segs : lls) {
+                                                segs.forEach(seg -> hexabetMap.put(seg, rotatedHexabet.charAt(i.getAndIncrement())));
+                                            }
 
-                                StringBuilder rotateRightATR = new StringBuilder(64);
-                                StringBuilder rotateRightATL = new StringBuilder(64);
+                                            for (String seg : allSegmentsInOrder_string) {
+                                                keyBuilder.append(hexabetMap.get(seg));
+                                            }
 
-                                StringBuilder rotateLeftATR = new StringBuilder(64);
-                                StringBuilder rotateLeftATL = new StringBuilder(64);
-                                for (int f = 0; f < segmentsByRing_originalOrder.size(); f++) {
-                                    rotateRightATR.append(SolverUtils.ringToString(colorMap, invColorMap, thicknessMap, invThicknessMap, segmentsByRing_originalOrder.get(f), segOrder));
-                                    rotateLeftATR.append(SolverUtils.ringToString(colorMap, invColorMap, thicknessMap, invThicknessMap, segmentsByRing_originalOrder.get(f), segOrder));
-                                    rotateRightATL.insert(0, SolverUtils.ringToString(colorMap, invColorMap, thicknessMap, invThicknessMap, segmentsByRing_originalOrder.get(f), segOrder));
-                                    rotateLeftATL.insert(0, SolverUtils.ringToString(colorMap, invColorMap, thicknessMap, invThicknessMap, segmentsByRing_originalOrder.get(f), segOrder));
-                                    if (rotationDistance != 0) {
-                                        ringSoFar = rotateRightATR.toString();
-                                        rotateRightATR.delete(0, rotateRightATR.length());
-                                        rotateRightATR.append(SolverUtils.rightRotate(ringSoFar, rotationDistance));
+                                            utils.validateHexPk(keyBuilder.toString(), null);
 
-                                        ringSoFar = rotateRightATL.toString();
-                                        rotateRightATL.delete(0, rotateRightATL.length());
-                                        rotateRightATL.append(SolverUtils.rightRotate(ringSoFar, rotationDistance));
-
-                                        ringSoFar = rotateLeftATR.toString();
-                                        rotateLeftATR.delete(0, rotateLeftATR.length());
-                                        rotateLeftATR.append(SolverUtils.leftRotate(ringSoFar, rotationDistance));
-
-                                        ringSoFar = rotateLeftATL.toString();
-                                        rotateLeftATL.delete(0, rotateLeftATL.length());
-                                        rotateLeftATL.append(SolverUtils.leftRotate(ringSoFar, rotationDistance));
-                                    }
-                                }
-                                metadataBuilder.append(rotationDistance).append('|')
-                                        .append(segOrder.name()).append('|')
-                                        .append("RS").append('|');
-                                utils.validateBinaryPk(rotateRightATR.toString(), "RR_ATR|" + metadataBuilder.toString());
-                                utils.validateBinaryPk(rotateRightATL.toString(), "RR_ATL|" + metadataBuilder.toString());
-                                utils.validateBinaryPk(rotateLeftATR.toString(), "RL_ATR|" + metadataBuilder.toString());
-                                utils.validateBinaryPk(rotateLeftATL.toString(), "RL_ATL|" + metadataBuilder.toString());
+                                            i.set(0);
+                                            hexabetMap.clear();
+                                        }
+                                    });
+                                });
                             });
+                        });
+                    });
+                });
+            }
+
+            if (performKeyShift || performRingShift) {
+                Collections2.permutations(possibleBinaryValues).forEach(colorPermutation -> {
+                    Map<Color, String> colorMap = SolverUtils.colorMapFromBinaryValues(colorPermutation);
+                    Map<Color, String> invColorMap = SolverUtils.invertColorToBinaryStringMap(colorMap);
+                    Collections2.permutations(possibleBinaryValues).forEach(thicknessPermutation -> {
+                        Map<Thickness, String> thicknessMap = SolverUtils.thicknessMapFromBinaryValues(thicknessPermutation);
+                        Map<Thickness, String> invThicknessMap = SolverUtils.invertThicknessToBinaryStringMap(thicknessMap);
+                        for (SolverUtils.SegOrder segOrder : SolverUtils.SegOrder.values()) {
+                            if (performRingShift) {
+                                IntStream.rangeClosed(0, 15).parallel().forEach(rotationDistance -> {
+                                    StringBuilder metadataBuilder = new StringBuilder();
+                                    String ringSoFar;
+
+                                    StringBuilder rotateRightATR = new StringBuilder(64);
+                                    StringBuilder rotateRightATL = new StringBuilder(64);
+
+                                    StringBuilder rotateLeftATR = new StringBuilder(64);
+                                    StringBuilder rotateLeftATL = new StringBuilder(64);
+                                    for (int f = 0; f < segmentsByRing_originalOrder.size(); f++) {
+                                        rotateRightATR.append(SolverUtils.ringToString(colorMap, invColorMap, thicknessMap, invThicknessMap, segmentsByRing_originalOrder.get(f), segOrder));
+                                        rotateLeftATR.append(SolverUtils.ringToString(colorMap, invColorMap, thicknessMap, invThicknessMap, segmentsByRing_originalOrder.get(f), segOrder));
+                                        rotateRightATL.insert(0, SolverUtils.ringToString(colorMap, invColorMap, thicknessMap, invThicknessMap, segmentsByRing_originalOrder.get(f), segOrder));
+                                        rotateLeftATL.insert(0, SolverUtils.ringToString(colorMap, invColorMap, thicknessMap, invThicknessMap, segmentsByRing_originalOrder.get(f), segOrder));
+                                        if (rotationDistance != 0) {
+                                            ringSoFar = rotateRightATR.toString();
+                                            rotateRightATR.delete(0, rotateRightATR.length());
+                                            rotateRightATR.append(SolverUtils.rightRotate(ringSoFar, rotationDistance));
+
+                                            ringSoFar = rotateRightATL.toString();
+                                            rotateRightATL.delete(0, rotateRightATL.length());
+                                            rotateRightATL.append(SolverUtils.rightRotate(ringSoFar, rotationDistance));
+
+                                            ringSoFar = rotateLeftATR.toString();
+                                            rotateLeftATR.delete(0, rotateLeftATR.length());
+                                            rotateLeftATR.append(SolverUtils.leftRotate(ringSoFar, rotationDistance));
+
+                                            ringSoFar = rotateLeftATL.toString();
+                                            rotateLeftATL.delete(0, rotateLeftATL.length());
+                                            rotateLeftATL.append(SolverUtils.leftRotate(ringSoFar, rotationDistance));
+                                        }
+                                    }
+                                    metadataBuilder.append(rotationDistance).append('|')
+                                            .append(segOrder.name()).append('|')
+                                            .append("RS").append('|');
+                                    utils.validateBinaryPk(rotateRightATR.toString(), "RR_ATR|" + metadataBuilder.toString());
+                                    utils.validateBinaryPk(rotateRightATL.toString(), "RR_ATL|" + metadataBuilder.toString());
+                                    utils.validateBinaryPk(rotateLeftATR.toString(), "RL_ATR|" + metadataBuilder.toString());
+                                    utils.validateBinaryPk(rotateLeftATL.toString(), "RL_ATL|" + metadataBuilder.toString());
+                                });
 
 
                         /*
@@ -185,9 +238,9 @@ public class ApplicationForked {
 
                          */
 
-                        }
+                            }
 
-                        if (performKeyShift) {
+                            if (performKeyShift) {
 //                                keyShiftNucleator.setRightOrLeftAppend(rightOrLeftAppend);
 //                                keyShiftNucleator.setRightOrLeftShift(rightOrLeftShift);
 //                                keyShiftNucleator.setSegOrder(segOrder);
@@ -195,12 +248,17 @@ public class ApplicationForked {
 //                                    keyShiftNucleator.setKeyShiftMode(keyShiftMode);
 //                                    keyShiftNucleator.nucleate(colorToBinaryMap, thicknessToBinaryMap);
 //                                }
+                            }
                         }
-                    }
+                    });
                 });
-            });
+            }
         } finally {
             utils.shutdownLoggers();
+            System.out.println("Finished at " + Instant.now().toString());
+            if (SolverUtils.numPkChecked != null) {
+                System.out.println(SolverUtils.numPkChecked.get() + " private keys checked");
+            }
         }
     }
 
